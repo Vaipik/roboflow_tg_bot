@@ -8,12 +8,10 @@ from bot.handlers import common_router, recognition_router
 from bot.utils import initialize_roboflow
 from config import cfg
 
+logger = logging.getLogger(__name__)
+
 
 async def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        # format="%(asctime)s [%(levelname)s%] - %(message)s"
-    )
     bot = Bot(token=cfg.bot_token.get_secret_value(), parse_mode="HTML")
 
     dp = Dispatcher(storage=MemoryStorage())
@@ -27,4 +25,8 @@ async def main():
 
 
 if __name__ == '__main__':
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
+    )
     asyncio.run(main())
