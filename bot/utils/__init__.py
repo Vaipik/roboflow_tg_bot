@@ -1,6 +1,7 @@
-from .object_recognition import roboflow_api
+from .object_recognition import initialize_roboflow, RoboFlow
 
 __all__ = [
-    "roboflow_api"
+    "initialize_roboflow",
+    "RoboFlow"
 ]
 
