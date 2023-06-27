@@ -1,14 +1,15 @@
 from pydantic import BaseSettings, SecretStr
 
 
-class RoboFlow(BaseSettings):
-    private_key: str
-    publishable_key: str
+class RoboFlowAPI(BaseSettings):
+    private_key: SecretStr
+    publishable_key: SecretStr
+    project_id: SecretStr
 
 
 class Settings(BaseSettings):
     bot_token: SecretStr
-    roboflow: RoboFlow
+    roboflow: RoboFlowAPI
 
     class Config:
         env_file = ".env"
