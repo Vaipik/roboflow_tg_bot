@@ -8,6 +8,10 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 aiogram = "3.0.0b7"
+python-dotenv = "^1.0.0"
+pydantic = {extras = ["dotenv"], version = "^1.10.9"}
+pillow = "^9.5.0"
+roboflow = "^1.1.0"
 
 
 [build-system]

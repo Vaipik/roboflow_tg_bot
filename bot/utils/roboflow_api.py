@@ -1,4 +1,5 @@
 import io
+import logging
 
 import aiohttp
 import roboflow
@@ -6,6 +7,8 @@ from PIL import Image
 from roboflow import Project
 
 from bot.config import RoboFlowAPI
+
+logger = logging.getLogger(__name__)
 
 
 class RoboFlow:
@@ -25,16 +28,17 @@ class RoboFlow:
 
         return image
 
-    def parse_response(self):
-        pass
+    def parse_response(self, response: dict = None) -> list[str]:
+        return [f"response_{i}: {i}" for i in range(1, 10)]
 
-    async def recognize(self, image_content: io.BytesIO):
+    async def recognize(self, image_content: io.BytesIO) -> list[str]:
+        return self.parse_response()
         image = self.preprocess_image(image_content)
 
         buffered = io.BytesIO()
         image.save(buffered, quality=90, format="JPEG")
 
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession() as session:  # TODO: Rewrite without context manager
             data = aiohttp.FormData()
             data.add_field("TELEGRAM2.jpg", buffered.getvalue(), content_type="image/jpeg")
             async with session.post(
@@ -42,6 +46,8 @@ class RoboFlow:
                     data=data,
             ) as response:
                 resp = await response.json()
+
+        return self.parse_response(resp)
 
 
 def initialize_roboflow(settings: RoboFlowAPI) -> RoboFlow:
