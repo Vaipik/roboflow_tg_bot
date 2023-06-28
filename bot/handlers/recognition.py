@@ -80,8 +80,7 @@ async def generate_response(callback: CallbackQuery, state: FSMContext, bot: Bot
     file_id = user_data["file_id"]
     file = await bot.get_file(file_id)
     file_path = file.file_path
-    image = await bot.download_file(file_path)
-    response = await roboflow_api.recognize(image)
+    response = await roboflow_api.recognize(file_path)
 
     # Following is just for testint
     # TODO: Rewrite when model will be ready

@@ -1,61 +1,66 @@
-import io
 import logging
-
-import aiohttp
 import roboflow
-from PIL import Image
-from roboflow import Project
+
 
 from bot.config import RoboFlowAPI
+
 
 logger = logging.getLogger(__name__)
 
 
 class RoboFlow:
 
-    def __init__(self, project: Project):
-        self.project = project
-        self.__url = self.__make_url()
+    def __init__(self, model, bot_token: str):
+        self.model = model
+        self.bot_token = bot_token
 
-    def __make_url(self) -> str:
-        project_name = self.project.name.replace(" ", "-").lower()
+    def make_url(self, file_path):
+        return f"https://api.telegram.org/file/bot{self.bot_token}/{file_path}"
 
-        url = f"https://api.roboflow.com/dataset/{project_name}/upload?api_key=API_KEY"  # TODO: Inject API_KEY
-        return url
+    def make_img(self):
+        pass
 
-    def preprocess_image(self, image_content: io.BytesIO) -> Image.Image:
-        image = Image.open(image_content).convert("RGB")
+    def parse_response(self, response: dict[list[dict]]) -> list[str]:
+        """
+        Example of roboflow response
+        {
+            "predictions": [
+                {
+                    "x": 662.0,  - center of the object X axis
+                    "y": 452.0, - center of the object Y axis
+                    "width": 184.0, - width of rectangle with center in X, Y
+                    "height": 154.0, - height of rectange wih center in X,Y
+                    "confidence": 0.6081843972206116, probability
+                    "class": "className",  - detected class
+                    "image_path": "path",  - image path or url
+                    "prediction_type": "ObjectDetectionModel"
+                }
+            ]
+        }
+        """
+        result = []
+        for prediction in response["predictions"]:
+            class_ = prediction["class"]
+            confidence = prediction["confidence"] * 100
+            result.append(f"class <b>{class_}</b> with confidence - <b>{confidence:.2f}</b>")
 
-        return image
+        return result
 
-    def parse_response(self, response: dict = None) -> list[str]:
-        return [f"response_{i}: {i}" for i in range(1, 10)]
+    async def recognize(self, file_path: str) -> list[str]:
+        # return self.parse_response()
+        url = self.make_url(file_path)
+        response = self.model.predict(url, hosted=True).json()
 
-    async def recognize(self, image_content: io.BytesIO) -> list[str]:
-        return self.parse_response()
-        image = self.preprocess_image(image_content)
-
-        buffered = io.BytesIO()
-        image.save(buffered, quality=90, format="JPEG")
-
-        async with aiohttp.ClientSession() as session:  # TODO: Rewrite without context manager
-            data = aiohttp.FormData()
-            data.add_field("TELEGRAM2.jpg", buffered.getvalue(), content_type="image/jpeg")
-            async with session.post(
-                    url=self.__url,
-                    data=data,
-            ) as response:
-                resp = await response.json()
-
-        return self.parse_response(resp)
+        return self.parse_response(response)
 
 
-def initialize_roboflow(settings: RoboFlowAPI) -> RoboFlow:
-    project = roboflow.Roboflow(
+def initialize_roboflow(settings: RoboFlowAPI, bot_token: str) -> RoboFlow:
+    model = roboflow.Roboflow(
         api_key=settings.private_key.get_secret_value()
     ). \
         workspace(). \
-        project(settings.project_id.get_secret_value())
+        project(settings.project_id.get_secret_value()). \
+        version(2).model
 
-    roboflow_api = RoboFlow(project=project)
+    roboflow_api = RoboFlow(model, bot_token)
     return roboflow_api

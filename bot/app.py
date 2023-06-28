@@ -18,7 +18,7 @@ async def main():
     dp.include_router(common_router)
     dp.include_router(recognition_router)
     dp.include_router(response_router)
-    roboflow_api = initialize_roboflow(cfg.roboflow)
+    roboflow_api = initialize_roboflow(cfg.roboflow, cfg.bot_token.get_secret_value())
 
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, roboflow_api=roboflow_api)
