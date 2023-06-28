@@ -5,8 +5,8 @@ from aiogram.filters import Text
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 
-from bot.keyboards.recognition import uploaded_photo_inline_kb
-from bot.keyboards.common import make_main_keyboard
+from bot.keyboards.common import make_main_keyboard, CommonKeyBoardButtons
+from bot.keyboards.recognition import uploaded_photo_inline_kb, RecognitionKeyboardButtons
 from bot.states import UploadingPhotoForm
 
 from bot.utils import RoboFlow
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 recognition_router = Router()
 
 
-@recognition_router.message(F.text == "Generate new")
+@recognition_router.message(F.text == CommonKeyBoardButtons.recognize)
 async def upload_image_command(message: Message, state: FSMContext):
     """
     This handler is for reply keyboard, and it is inital state for uploading photo.
@@ -28,7 +28,7 @@ async def upload_image_command(message: Message, state: FSMContext):
     )
 
 
-@recognition_router.callback_query(Text("cancel_response"))
+@recognition_router.callback_query(Text(RecognitionKeyboardButtons.no_button))
 async def upload_image_state(callback: CallbackQuery, state: FSMContext):
     """
     This handler is for inline keyboard, it makes opportunity to upload another photo.
@@ -50,8 +50,8 @@ async def process_image(message: Message, state: FSMContext):
     file_id = message.photo[-1].file_id  # file that was sent to the bot
     await message.reply(
         f"Okey, you have uploaded a photo.\n"
-        f"If you want to continue, click {html.bold('Yes')}\n"
-        f"if you want to upload another photo click {html.bold('No')}",
+        f"If you want to continue, click {html.bold(RecognitionKeyboardButtons.make_response)}\n"
+        f"if you want to upload another photo click {html.bold(RecognitionKeyboardButtons.upload_another)}",
         reply_markup=uploaded_photo_inline_kb()
     )
     await state.update_data(file_id=file_id)
@@ -70,7 +70,7 @@ async def process_document_image(message: Message):
     )
 
 
-@recognition_router.callback_query(UploadingPhotoForm.answer, Text("make_response"))
+@recognition_router.callback_query(UploadingPhotoForm.answer, Text(RecognitionKeyboardButtons.yes_button))
 async def generate_response(callback: CallbackQuery, state: FSMContext, bot: Bot, roboflow_api: RoboFlow):
     """
     Handler getting uploaded user photo into BytesIO,
