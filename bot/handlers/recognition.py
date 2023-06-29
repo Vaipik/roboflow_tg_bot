@@ -84,7 +84,6 @@ async def generate_response(callback: CallbackQuery, state: FSMContext, bot: Bot
     file_path = file.file_path
     file_bytes = await bot.download_file(file_path)
     labels, image_bytes = await roboflow_api.recognize(file_bytes, file_path)
-    # response = await roboflow_api.recognize(file_path)
     img = BufferedInputFile(image_bytes, "response.jpg")
     await bot.send_photo(
         chat_id=chat_id,
@@ -92,6 +91,7 @@ async def generate_response(callback: CallbackQuery, state: FSMContext, bot: Bot
         caption=f"I have following answer according to your request:\n" +
                 "\n".join(
                     [f"Label <b>{label}</b>: met <b>{amount}</b> times" for label, amount in labels.items()]
-                )
+                ),
+        reply_markup=make_main_keyboard()
     )
     await callback.answer(text="Redirecting to main menu", show_alert=True)
