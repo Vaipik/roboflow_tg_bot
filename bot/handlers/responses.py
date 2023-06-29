@@ -1,17 +1,14 @@
 from aiogram import F, Router
 from aiogram.filters import Text
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 
 from bot.keyboards.common import CommonKeyBoardButtons
 from bot.keyboards.responses import ResponseKeyboardButtons, make_paginate_keyboard
+from bot.states.responses import ResponseStates
+
 
 response_router = Router()
-
-
-class ResponseStates(StatesGroup):
-    paginated_response = State()
 
 
 @response_router.message(
@@ -37,7 +34,7 @@ async def previous_five_responses(callback: CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
     page = user_data["page"] - 1
     responses = [f"response_{i}" for i in range(1 + 19 * (page - 1), 19 * (1 + (page - 1)))]
-    await callback.message.answer(
+    await callback.message.edit_text(
         text="Responses:",
         reply_markup=make_paginate_keyboard(responses, len(responses) * 4, page)
     )
@@ -52,7 +49,7 @@ async def previous_five_responses(callback: CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
     page = user_data["page"] + 1
     responses = [f"response_{i}" for i in range(1 + 19 * (page - 1), 19 * (1 + (page - 1)))]
-    await callback.message.answer(
+    await callback.message.edit_text(
         text="Responses:",
         reply_markup=make_paginate_keyboard(responses, len(responses) * 4, page)
     )
