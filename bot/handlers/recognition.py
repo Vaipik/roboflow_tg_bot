@@ -3,7 +3,7 @@ import logging
 from aiogram import Bot, F, Router, html
 from aiogram.filters import Text
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
+from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery, BufferedInputFile
 
 from bot.keyboards.common import make_main_keyboard, CommonKeyBoardButtons
 from bot.keyboards.recognition import uploaded_photo_inline_kb, RecognitionKeyboardButtons
@@ -48,13 +48,14 @@ async def process_image(message: Message, state: FSMContext):
     Also gives possibility to choose another photo.
     """
     file_id = message.photo[-1].file_id  # file that was sent to the bot
+    chat_id = message.chat.id
     await message.reply(
         f"Okey, you have uploaded a photo.\n"
         f"If you want to continue, click {html.bold(RecognitionKeyboardButtons.make_response)}\n"
         f"if you want to upload another photo click {html.bold(RecognitionKeyboardButtons.upload_another)}",
         reply_markup=uploaded_photo_inline_kb()
     )
-    await state.update_data(file_id=file_id)
+    await state.update_data(file_id=file_id, chat_id=chat_id)
     await state.set_state(UploadingPhotoForm.answer)
 
 
@@ -78,13 +79,19 @@ async def generate_response(callback: CallbackQuery, state: FSMContext, bot: Bot
     """
     user_data = await state.get_data()
     file_id = user_data["file_id"]
+    chat_id = user_data["chat_id"]
     file = await bot.get_file(file_id)
     file_path = file.file_path
-    response = await roboflow_api.recognize(file_path)
-
-    # Following is just for testint
-    # TODO: Rewrite when model will be ready
-    await callback.message.answer(
-        text=f"I have following answer according to your request:\n" + "\n".join(response),
-        reply_markup=make_main_keyboard())
+    file_bytes = await bot.download_file(file_path)
+    labels, image_bytes = await roboflow_api.recognize(file_bytes, file_path)
+    # response = await roboflow_api.recognize(file_path)
+    img = BufferedInputFile(image_bytes, "response.jpg")
+    await bot.send_photo(
+        chat_id=chat_id,
+        photo=img,
+        caption=f"I have following answer according to your request:\n" +
+                "\n".join(
+                    [f"Label <b>{label}</b>: met <b>{amount}</b> times" for label, amount in labels.items()]
+                )
+    )
     await callback.answer(text="Redirecting to main menu", show_alert=True)
