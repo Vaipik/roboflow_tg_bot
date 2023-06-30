@@ -12,6 +12,8 @@ python-dotenv = "^1.0.0"
 pydantic = {extras = ["dotenv"], version = "^1.10.9"}
 pillow = "^9.5.0"
 roboflow = "^1.1.0"
+sqlalchemy = "^2.0.17"
+alembic = "^1.11.1"
 
 
 [build-system]
