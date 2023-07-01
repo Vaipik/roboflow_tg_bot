@@ -14,7 +14,7 @@ class Recognition(Base):
     response_id: Mapped[UUID] = mapped_column(
         ForeignKey("response.id")
     )
-    response: Mapped["Response"] = relationship(
+    response: Mapped["Response"] = relationship(  # type: ignore
         back_populates="objects"
     )
 

@@ -45,7 +45,7 @@ async def previous_five_responses(callback: CallbackQuery, state: FSMContext):
     ResponseStates.paginated_response,
     Text(ResponseKeyboardButtons.next_callback_data)
 )
-async def previous_five_responses(callback: CallbackQuery, state: FSMContext):
+async def next_five_responses(callback: CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
     page = user_data["page"] + 1
     responses = [f"response_{i}" for i in range(1 + 19 * (page - 1), 19 * (1 + (page - 1)))]

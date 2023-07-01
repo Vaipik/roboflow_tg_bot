@@ -47,7 +47,7 @@ async def process_image(message: Message, state: FSMContext):
     This handler is validataing that file is photo, updating user data by adding file_id in user data.
     Also gives possibility to choose another photo.
     """
-    file_id = message.photo[-1].file_id  # file that was sent to the bot
+    file_id = message.photo[-1].file_id  # type: ignore # file that was sent to the bot
     chat_id = message.chat.id
     await message.reply(
         f"Okey, you have uploaded a photo.\n"
@@ -82,16 +82,27 @@ async def generate_response(callback: CallbackQuery, state: FSMContext, bot: Bot
     chat_id = user_data["chat_id"]
     file = await bot.get_file(file_id)
     file_path = file.file_path
+    if file_path is None:
+        return
+
     file_bytes = await bot.download_file(file_path)
-    labels, image_bytes = await roboflow_api.recognize(file_bytes, file_path)
-    img = BufferedInputFile(image_bytes, "response.jpg")
-    await bot.send_photo(
-        chat_id=chat_id,
-        photo=img,
-        caption=f"I have following answer according to your request:\n" +
-                "\n".join(
-                    [f"Label <b>{label}</b>: met <b>{amount}</b> times" for label, amount in labels.items()]
-                ),
-        reply_markup=make_main_keyboard()
-    )
+    labels, *image_bytes = await roboflow_api.recognize(file_bytes, file_path)  # type: ignore
+
+    if labels:
+
+        img = BufferedInputFile(*image_bytes, "response.jpg")
+        await bot.send_photo(
+            chat_id=chat_id,
+            photo=img,
+            caption=f"I have following answer according to your request:\n" +
+                    "\n".join(
+                        [f"Label <b>{label}</b>: met <b>{amount}</b> times" for label, amount in labels.items()]
+                    ),
+            reply_markup=make_main_keyboard()
+        )
+    else:
+        await callback.message.answer(
+            text="Unfortunately i was not able to recognize anything❤️‍🩹"
+        )
+
     await callback.answer(text="Redirecting to main menu", show_alert=True)

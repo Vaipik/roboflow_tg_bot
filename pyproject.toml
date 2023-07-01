@@ -18,6 +18,14 @@ psycopg2 = "^2.9.6"
 asyncpg = "^0.27.0"
 
 
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.4.1"
+
+[tool.mypy]
+python = "3.10"
+ignore_missing_import = true
+disable_error_code = ["call-arg", "union-attr"]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

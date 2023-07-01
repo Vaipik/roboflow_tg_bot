@@ -21,9 +21,9 @@ class Response(Base):
     chat_image_id: Mapped[UUID] = mapped_column(
         ForeignKey("images.id")
     )
-    image: Mapped["Image"] = relationship(
+    image: Mapped["Image"] = relationship(  # type: ignore
         "Image", back_populates="response"
     )
-    objects: Mapped[list["Recognition"]] = relationship(
+    objects: Mapped[list["Recognition"]] = relationship(  # type: ignore
         "Recognition", back_populates="response"
     )
