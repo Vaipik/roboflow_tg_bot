@@ -15,15 +15,19 @@ class ModelType(str, enum.Enum):
 
 class Response(Base):
     recognized_image_id: Mapped[int]
-    generated_at: Mapped[datetime] = mapped_column()
-    model: Mapped[ModelType]
-    version: Mapped[str]
-    chat_image_id: Mapped[UUID] = mapped_column(
+    generated_at: Mapped[datetime] = mapped_column(insert_default=datetime.utcnow)
+    image_id: Mapped[UUID] = mapped_column(
         ForeignKey("images.id")
+    )
+    model_id: Mapped[UUID] = mapped_column(
+        ForeignKey("models.id")
     )
     image: Mapped["Image"] = relationship(  # type: ignore
         "Image", back_populates="response"
     )
     objects: Mapped[list["Recognition"]] = relationship(  # type: ignore
         "Recognition", back_populates="response"
+    )
+    model: Mapped["NeuralModel"] = relationship(
+        "NeuralModel", back_populates="responses"
     )
