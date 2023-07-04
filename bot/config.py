@@ -1,6 +1,14 @@
 from pydantic import BaseSettings, SecretStr
 
 
+class DataBase(BaseSettings):
+    user: str
+    password: str
+    host: str
+    port: str
+    name: str
+
+
 class RoboFlowAPI(BaseSettings):
     private_key: SecretStr
     publishable_key: SecretStr
@@ -10,6 +18,7 @@ class RoboFlowAPI(BaseSettings):
 class Settings(BaseSettings):
     bot_token: SecretStr
     roboflow: RoboFlowAPI
+    db: DataBase
 
     class Config:
         env_file = ".env"

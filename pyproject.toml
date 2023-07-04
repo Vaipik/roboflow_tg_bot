@@ -26,6 +26,10 @@ python = "3.10"
 ignore_missing_import = true
 disable_error_code = ["call-arg", "union-attr"]
 
+[[tool.mypy.overrides]]
+module = "bot.*"
+ignore_missing_import = true
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

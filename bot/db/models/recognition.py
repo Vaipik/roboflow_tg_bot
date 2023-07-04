@@ -10,12 +10,13 @@ class Recognition(Base):
     """This table is store object label and amount for the given response"""
     __tablename__ = "recognized_objects"
     label: Mapped[str]
-    count: Mapped[int]
+    amount: Mapped[int]
     response_id: Mapped[UUID] = mapped_column(
-        ForeignKey("response.id")
+        ForeignKey("responses.id")
     )
     response: Mapped["Response"] = relationship(  # type: ignore
         back_populates="objects"
     )
 
-
+    def __repr__(self):
+        return f"[{self.label}={self.amount}]"

@@ -11,3 +11,6 @@ class NeuralModel(Base):
     responses: Mapped[list["Response"]] = relationship(  # type: ignore
         "Response", back_populates="model"
     )
+
+    def __repr__(self):
+        return f"[NN {self.name}v{self.version}]"
