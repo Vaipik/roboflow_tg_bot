@@ -1,9 +1,13 @@
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from bot import dto
 from bot.db.models import Response
 from .base import SQLAlchemyRepository
+
+logger = logging.getLogger(__name__)
 
 
 class ResponseRepository(SQLAlchemyRepository):
@@ -15,6 +19,7 @@ class ResponseRepository(SQLAlchemyRepository):
         """
         statement = select(Response).where(Response.image_id == image_id, Response.chat_id == chat_id)
         result = await self.session.scalar(statement)
+        logger.info(result)
         return True if result else False
 
     async def get_user_response(self, image_id: str, chat_id: int) -> dto.Response:
@@ -25,10 +30,9 @@ class ResponseRepository(SQLAlchemyRepository):
         :return:
         """
         statement = select(Response). \
-            options(joinedload(Response.objects, innerjoin=True)).\
+            options(joinedload(Response.objects, innerjoin=True)). \
             where(Response.image_id == image_id, Response.chat_id == chat_id)
         response = await self.session.scalars(statement)
-
 
     async def save_user_image(self, image_id: str, chat_id: int) -> Response:
         """

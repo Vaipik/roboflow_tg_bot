@@ -1,8 +1,8 @@
 """init
 
-Revision ID: 684a3016c47d
+Revision ID: 991027652a1e
 Revises: 
-Create Date: 2023-07-04 17:17:48.083534
+Create Date: 2023-07-05 21:40:13.821433
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '684a3016c47d'
+revision = '991027652a1e'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -27,8 +27,8 @@ def upgrade() -> None:
     op.create_table('responses',
     sa.Column('image_id', sa.String(), nullable=False),
     sa.Column('chat_id', sa.Integer(), nullable=False),
-    sa.Column('recognized_image_id', sa.Integer(), nullable=False),
-    sa.Column('generated_at', sa.DateTime(), nullable=False),
+    sa.Column('recognized_image_id', sa.String(), nullable=False),
+    sa.Column('generated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('model_id', sa.Uuid(), nullable=False),
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.ForeignKeyConstraint(['model_id'], ['neural_models.id'], ),

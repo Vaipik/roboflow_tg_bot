@@ -4,12 +4,15 @@ from aiogram import Bot, F, Router, html
 from aiogram.filters import Text
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery, BufferedInputFile
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from bot.db.models import Recognition, Response
+from bot.db.repository.responses import ResponseRepository
 from bot.keyboards.common import make_main_keyboard, CommonKeyBoardButtons
 from bot.keyboards.recognition import uploaded_photo_inline_kb, RecognitionKeyboardButtons
 from bot.states import UploadingPhotoForm
-
 from bot.utils import RoboFlow
+from db.models import NeuralModel
 
 logger = logging.getLogger(__name__)
 
@@ -49,12 +52,14 @@ async def process_image(message: Message, state: FSMContext):
     """
     file_id = message.photo[-1].file_id  # type: ignore # file that was sent to the bot
     chat_id = message.chat.id
+
     await message.reply(
         f"Okey, you have uploaded a photo.\n"
         f"If you want to continue, click {html.bold(RecognitionKeyboardButtons.make_response)}\n"
         f"if you want to upload another photo click {html.bold(RecognitionKeyboardButtons.upload_another)}",
         reply_markup=uploaded_photo_inline_kb()
     )
+
     await state.update_data(file_id=file_id, chat_id=chat_id)
     await state.set_state(UploadingPhotoForm.answer)
 
@@ -71,8 +76,18 @@ async def process_document_image(message: Message):
     )
 
 
-@recognition_router.callback_query(UploadingPhotoForm.answer, Text(RecognitionKeyboardButtons.yes_button))
-async def generate_response(callback: CallbackQuery, state: FSMContext, bot: Bot, roboflow_api: RoboFlow):
+@recognition_router.callback_query(
+    UploadingPhotoForm.answer,
+    Text(RecognitionKeyboardButtons.yes_button)
+)
+async def generate_response(
+        callback: CallbackQuery,
+        state: FSMContext,
+        bot: Bot,
+        roboflow_api: RoboFlow,
+        responses_repo: ResponseRepository,
+        session: AsyncSession  # TODO: remove session to repo ?
+):
     """
     Handler getting uploaded user photo into BytesIO,
     making request to roboflow api using photo in BytesIO and proceed it to the user via message
@@ -80,6 +95,9 @@ async def generate_response(callback: CallbackQuery, state: FSMContext, bot: Bot
     user_data = await state.get_data()
     file_id = user_data["file_id"]
     chat_id = user_data["chat_id"]
+    checked_image = await responses_repo.check_user_image(file_id, chat_id)
+    if checked_image:
+        pass  # TODO: response
     file = await bot.get_file(file_id)
     file_path = file.file_path
     if file_path is None:
@@ -91,8 +109,7 @@ async def generate_response(callback: CallbackQuery, state: FSMContext, bot: Bot
     if labels:
 
         img = BufferedInputFile(*image_bytes, "response.jpg")
-        await bot.send_photo(
-            chat_id=chat_id,
+        recognized_image = await callback.message.answer_photo(
             photo=img,
             caption=f"I have following answer according to your request:\n" +
                     "\n".join(
@@ -100,6 +117,27 @@ async def generate_response(callback: CallbackQuery, state: FSMContext, bot: Bot
                     ),
             reply_markup=make_main_keyboard()
         )
+        logger.info(recognized_image)
+        recognized_image_id = recognized_image.photo[0].file_id
+        logger.info(recognized_image_id)
+        model = NeuralModel(
+            name="duplo-bricks",
+            version="2"
+        )
+        session.add(model)
+        await session.flush()
+        response = Response(
+            image_id=file_id,
+            chat_id=chat_id,
+            model_id=model.id,
+            recognized_image_id=recognized_image_id,
+        )
+        session.add(response)
+        objects = [
+            Recognition(label=label, amount=amount, response=response) for label, amount in labels.items()
+        ]
+        session.add_all(objects)
+        await session.commit()
     else:
         await callback.message.answer(
             text="Unfortunately i was not able to recognize anything❤️‍🩹"

@@ -16,9 +16,10 @@ logger = logging.getLogger(__name__)
 
 async def main():
     engine = create_async_engine(
-        f"postgresql+asyncpg://{cfg.db.user}:{cfg.db.password}@{cfg.db.host}:{cfg.db.port}/{cfg.db.name}"
+        f"postgresql+asyncpg://{cfg.db.user}:{cfg.db.password}@{cfg.db.host}:{cfg.db.port}/{cfg.db.name}",
+        echo=True
     )
-    # print(engine)
+
     sessionmakeer = async_sessionmaker(engine, expire_on_commit=False)
 
     bot = Bot(token=cfg.bot_token.get_secret_value(), parse_mode="HTML")
