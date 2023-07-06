@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 from bot.db.models import Base
+
 # from bot.config import cfg
 
 target_metadata = Base.metadata
@@ -16,8 +17,8 @@ target_metadata = Base.metadata
 # access to the values within the .ini file in use.
 config = context.config
 config.set_main_option(
-    'sqlalchemy.url',
-    f"postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/roboflow"
+    "sqlalchemy.url",
+    "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/roboflow"
     # f"postgresql+asyncpg://{cfg.db.user}:{cfg.db.password}@{cfg.db.host}:{cfg.db.port}/{cfg.db.name}"
 )
 

@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, UniqueConstraint, TIMESTAMP, func
@@ -8,23 +7,37 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
 
-if TYPE_CHECKING:
-    from .neural_models import NeuralModel
-    from .recognition import Recognition
-
-
 class Response(Base):
-    __tablename__ = "responses"
-    __table_args__ = (UniqueConstraint("image_id", "model_id"),)
+    """
+    Stores response from neural network.\n
+    response_image_id: str | None file id for downloadign if recognize was succesful.\n
+    generated_at: datetime when response was made. \n
+    uploaded_image_id: FK[UUID] image which should be recognized.\n
+    model_id: FK[UUID] NN model which was used for recognition.
+    """
 
-    image_id: Mapped[str]
-    chat_id: Mapped[int]
-    recognized_image_id: Mapped[str]
+    __tablename__ = "responses"
+    __table_args__ = (
+        UniqueConstraint("response_image_id", "uploaded_image_id", "model_id"),
+    )
+
+    response_image_id: Mapped[str | None]
     generated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), server_default=func.now()
     )
+    # FK
+    uploaded_image_id: Mapped[UUID] = mapped_column(ForeignKey("uploaded_images.id"))
     model_id: Mapped[UUID] = mapped_column(ForeignKey("neural_models.id"))
-    objects: Mapped[list[Recognition]] = relationship(
-        "Recognition", back_populates="response"
+    # Alchemy relationships
+    objects: Mapped[list["Recognition"]] = relationship(  # type: ignore
+        back_populates="response"
     )
-    model: Mapped[NeuralModel] = relationship("NeuralModel", back_populates="responses")
+    uploaded_image: Mapped["UploadedImage"] = relationship(  # type: ignore
+        back_populates="response", uselist=False
+    )
+    model: Mapped["NeuralModel"] = relationship(  # type: ignore
+        back_populates="responses", uselist=False
+    )
+
+    def __repr__(self) -> str:
+        return f"[R {self.response_image_id=} | {self.uploaded_image_id}]"
