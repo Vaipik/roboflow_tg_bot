@@ -11,7 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 class RoboFlow:
-    """Class that operates with roboflow api via uploading photo to roboflow and parsing response"""
+    """Class that operates with roboflow api via uploading photo
+    to roboflow and parsing response
+    """
 
     def __init__(self, model, bot_token: str):
         self.model = model
@@ -23,7 +25,9 @@ class RoboFlow:
     def make_img(self):
         pass
 
-    def parse_response(self, draw: ImageDraw.ImageDraw, response: dict[str, list[dict]]) -> dict:
+    def parse_response(
+        self, draw: ImageDraw.ImageDraw, response: dict[str, list[dict]]
+    ) -> dict:
         """
         Example of roboflow response
         {
@@ -55,9 +59,13 @@ class RoboFlow:
             draw.text((x1, y1), text=f"{class_} - {confidence:.2f}%", fill="darkorange")
         return result
 
-    async def recognize(self, file_bytes: io.BytesIO, file_path: str) -> Optional[tuple[dict, bytes]]:
+    async def recognize(
+        self, file_bytes: io.BytesIO, file_path: str
+    ) -> Optional[tuple[dict, bytes]]:
         url = self.make_url(file_path)
-        response: Optional[dict[str, list[dict]]] = self.model.predict(url, hosted=True).json()
+        response: Optional[dict[str, list[dict]]] = self.model.predict(
+            url, hosted=True
+        ).json()
         if response:
             img = Image.open(file_bytes)
             draw = ImageDraw.Draw(img)
@@ -70,13 +78,16 @@ class RoboFlow:
             return result, img_bytes
 
         return None
+
+
 def initialize_roboflow(settings: RoboFlowAPI, bot_token: str) -> RoboFlow:
-    model = roboflow.Roboflow(
-        api_key=settings.private_key.get_secret_value()
-    ). \
-        workspace(). \
-        project(settings.project_id.get_secret_value()). \
-        version(2).model
+    model = (
+        roboflow.Roboflow(api_key=settings.private_key.get_secret_value())
+        .workspace()
+        .project(settings.project_id.get_secret_value())
+        .version(2)
+        .model
+    )
 
     roboflow_api = RoboFlow(model, bot_token)
     return roboflow_api

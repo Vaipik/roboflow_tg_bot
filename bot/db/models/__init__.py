@@ -4,9 +4,4 @@ from .recognition import Recognition
 from .neural_models import NeuralModel
 
 
-__all__ = [
-    "Base",
-    "Recognition",
-    "Response",
-    "NeuralModel"
-]
+__all__ = ["Base", "Recognition", "Response", "NeuralModel"]

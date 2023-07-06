@@ -1,6 +1,11 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy.orm import Mapped, relationship
 
 from .base import Base
+
+if TYPE_CHECKING:
+    from .responses import Response
 
 
 class NeuralModel(Base):
@@ -8,9 +13,7 @@ class NeuralModel(Base):
 
     name: Mapped[str]
     version: Mapped[str]
-    responses: Mapped[list["Response"]] = relationship(  # type: ignore
-        "Response", back_populates="model"
-    )
+    responses: Mapped[list[Response]] = relationship("Response", back_populates="model")
 
     def __repr__(self):
         return f"[NN {self.name}v{self.version}]"

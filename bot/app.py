@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 async def main():
     engine = create_async_engine(
         f"postgresql+asyncpg://{cfg.db.user}:{cfg.db.password}@{cfg.db.host}:{cfg.db.port}/{cfg.db.name}",
-        echo=True
+        echo=True,
     )
 
     sessionmakeer = async_sessionmaker(engine, expire_on_commit=False)
@@ -37,7 +37,7 @@ async def main():
     await dp.start_polling(bot, roboflow_api=roboflow_api)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",

@@ -6,13 +6,15 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery, BufferedInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.db.models import Recognition, Response
+from bot.db.models import NeuralModel, Recognition, Response
 from bot.db.repository.responses import ResponseRepository
 from bot.keyboards.common import make_main_keyboard, CommonKeyBoardButtons
-from bot.keyboards.recognition import uploaded_photo_inline_kb, RecognitionKeyboardButtons
+from bot.keyboards.recognition import (
+    uploaded_photo_inline_kb,
+    RecognitionKeyboardButtons,
+)
 from bot.states import UploadingPhotoForm
 from bot.utils import RoboFlow
-from db.models import NeuralModel
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +29,7 @@ async def upload_image_command(message: Message, state: FSMContext):
     await state.set_state(UploadingPhotoForm.waiting_upload)
     await message.answer(
         text=f"Upload a photo with {html.bold('lego')} after this message",
-        reply_markup=ReplyKeyboardRemove()
+        reply_markup=ReplyKeyboardRemove(),
     )
 
 
@@ -37,7 +39,9 @@ async def upload_image_state(callback: CallbackQuery, state: FSMContext):
     This handler is for inline keyboard, it makes opportunity to upload another photo.
     """
     await state.set_state(UploadingPhotoForm.waiting_upload)
-    await callback.message.answer(text=f"Upload a photo with {html.bold('lego')} after this message", )
+    await callback.message.answer(
+        text=f"Upload a photo with {html.bold('lego')} after this message",
+    )
     await callback.answer()
 
 
@@ -47,7 +51,8 @@ async def upload_image_state(callback: CallbackQuery, state: FSMContext):
 )
 async def process_image(message: Message, state: FSMContext):
     """
-    This handler is validataing that file is photo, updating user data by adding file_id in user data.
+    This handler is validataing that file is photo
+    updating user data by adding file_id in user data.
     Also gives possibility to choose another photo.
     """
     file_id = message.photo[-1].file_id  # type: ignore # file that was sent to the bot
@@ -55,42 +60,40 @@ async def process_image(message: Message, state: FSMContext):
 
     await message.reply(
         f"Okey, you have uploaded a photo.\n"
-        f"If you want to continue, click {html.bold(RecognitionKeyboardButtons.make_response)}\n"
-        f"if you want to upload another photo click {html.bold(RecognitionKeyboardButtons.upload_another)}",
-        reply_markup=uploaded_photo_inline_kb()
+        f"If you want to continue, click"
+        f"{html.bold(RecognitionKeyboardButtons.make_response)}\n"
+        f"if you want to upload another photo click "
+        f"{html.bold(RecognitionKeyboardButtons.upload_another)}",
+        reply_markup=uploaded_photo_inline_kb(),
     )
 
     await state.update_data(file_id=file_id, chat_id=chat_id)
     await state.set_state(UploadingPhotoForm.answer)
 
 
-@recognition_router.message(
-    UploadingPhotoForm.waiting_upload
-)
+@recognition_router.message(UploadingPhotoForm.waiting_upload)
 async def process_document_image(message: Message):
     """
     This handler is letting a user know that uploaded file is not photo
     """
-    await message.answer(
-        text="You need to upload compressed image"
-    )
+    await message.answer(text="You need to upload compressed image")
 
 
 @recognition_router.callback_query(
-    UploadingPhotoForm.answer,
-    Text(RecognitionKeyboardButtons.yes_button)
+    UploadingPhotoForm.answer, Text(RecognitionKeyboardButtons.yes_button)
 )
 async def generate_response(
-        callback: CallbackQuery,
-        state: FSMContext,
-        bot: Bot,
-        roboflow_api: RoboFlow,
-        responses_repo: ResponseRepository,
-        session: AsyncSession  # TODO: remove session to repo ?
+    callback: CallbackQuery,
+    state: FSMContext,
+    bot: Bot,
+    roboflow_api: RoboFlow,
+    responses_repo: ResponseRepository,
+    session: AsyncSession,  # TODO: remove session to repo ?
 ):
     """
     Handler getting uploaded user photo into BytesIO,
-    making request to roboflow api using photo in BytesIO and proceed it to the user via message
+    making request to roboflow api using photo in BytesIO
+    and proceed it to the user via message
     """
     user_data = await state.get_data()
     file_id = user_data["file_id"]
@@ -104,26 +107,25 @@ async def generate_response(
         return
 
     file_bytes = await bot.download_file(file_path)
-    labels, *image_bytes = await roboflow_api.recognize(file_bytes, file_path)  # type: ignore
+    labels, *image_bytes = await roboflow_api.recognize(file_bytes, file_path)
 
     if labels:
-
         img = BufferedInputFile(*image_bytes, "response.jpg")
         recognized_image = await callback.message.answer_photo(
             photo=img,
-            caption=f"I have following answer according to your request:\n" +
-                    "\n".join(
-                        [f"Label <b>{label}</b>: met <b>{amount}</b> times" for label, amount in labels.items()]
-                    ),
-            reply_markup=make_main_keyboard()
+            caption="I have following answer according to your request:\n"
+            + "\n".join(
+                [
+                    f"Label <b>{label}</b>: met <b>{amount}</b> times"
+                    for label, amount in labels.items()
+                ]
+            ),
+            reply_markup=make_main_keyboard(),
         )
         logger.info(recognized_image)
         recognized_image_id = recognized_image.photo[0].file_id
         logger.info(recognized_image_id)
-        model = NeuralModel(
-            name="duplo-bricks",
-            version="2"
-        )
+        model = NeuralModel(name="duplo-bricks", version="2")
         session.add(model)
         await session.flush()
         response = Response(
@@ -134,7 +136,8 @@ async def generate_response(
         )
         session.add(response)
         objects = [
-            Recognition(label=label, amount=amount, response=response) for label, amount in labels.items()
+            Recognition(label=label, amount=amount, response=response)
+            for label, amount in labels.items()
         ]
         session.add_all(objects)
         await session.commit()

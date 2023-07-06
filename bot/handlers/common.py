@@ -12,8 +12,7 @@ common_router = Router()
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
-        text="What do you want to do ?\n",
-        reply_markup=make_main_keyboard()
+        text="What do you want to do ?\n", reply_markup=make_main_keyboard()
     )
 
 
@@ -21,7 +20,4 @@ async def cmd_start(message: Message, state: FSMContext):
 @common_router.message(Text(text="cancel", ignore_case=True))
 async def cmd_cancel(message: Message, state: FSMContext):
     await state.clear()
-    await message.answer(
-        text="Action cancelled",
-        reply_markup=ReplyKeyboardRemove()
-    )
+    await message.answer(text="Action cancelled", reply_markup=ReplyKeyboardRemove())

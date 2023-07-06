@@ -13,11 +13,15 @@ class RecognitionKeyboardButtons:
 
 
 def uploaded_photo_inline_kb(
-        kb_buttons: RecognitionKeyboardButtons = RecognitionKeyboardButtons()
+    kb_buttons: RecognitionKeyboardButtons = RecognitionKeyboardButtons(),
 ) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text=kb_buttons.make_response, callback_data=kb_buttons.yes_button),
-        InlineKeyboardButton(text=kb_buttons.upload_another, callback_data=kb_buttons.no_button),
+        InlineKeyboardButton(
+            text=kb_buttons.make_response, callback_data=kb_buttons.yes_button
+        ),
+        InlineKeyboardButton(
+            text=kb_buttons.upload_another, callback_data=kb_buttons.no_button
+        ),
     )
     return builder.as_markup()

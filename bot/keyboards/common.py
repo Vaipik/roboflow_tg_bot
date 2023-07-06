@@ -11,7 +11,7 @@ class CommonKeyBoardButtons:
 
 
 def make_main_keyboard(
-        kb_buttons: CommonKeyBoardButtons = CommonKeyBoardButtons()
+    kb_buttons: CommonKeyBoardButtons = CommonKeyBoardButtons(),
 ) -> ReplyKeyboardMarkup:
     builder = ReplyKeyboardBuilder()
     builder.row(
@@ -20,4 +20,3 @@ def make_main_keyboard(
     )
     builder.adjust(2)
     return builder.as_markup(resize_keyboard=True)
-
