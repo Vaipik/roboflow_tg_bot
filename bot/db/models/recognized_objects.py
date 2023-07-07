@@ -8,9 +8,10 @@ from .base import Base
 
 class RecognizedObject(Base):
     """
-    This table is store object label and amount for the given response.\n
-    label: str - label of object.\n
-    amount: int - quantity of objects per response.\n
+    This table is store object label and amount for the given response.
+
+    label: str - label of object.
+    amount: int - quantity of objects per response.
     response_id: FK[UUID] - FK to response.
     """
 

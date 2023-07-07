@@ -6,6 +6,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 @dataclass(frozen=True)
 class RecognitionKeyboardButtons:
+    """Buttons for inline kb when user uploads a photo."""
+
     yes_button: str = "make_response"
     no_button: str = "cancel_response"
     make_response: str = "Yes"
@@ -13,8 +15,9 @@ class RecognitionKeyboardButtons:
 
 
 def uploaded_photo_inline_kb(
-    kb_buttons: RecognitionKeyboardButtons = RecognitionKeyboardButtons(),
+    kb_buttons: RecognitionKeyboardButtons,
 ) -> InlineKeyboardMarkup:
+    """Build inline kb."""
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(
@@ -25,3 +28,6 @@ def uploaded_photo_inline_kb(
         ),
     )
     return builder.as_markup()
+
+
+recognition_kb = RecognitionKeyboardButtons()

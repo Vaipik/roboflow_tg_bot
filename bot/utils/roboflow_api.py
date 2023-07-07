@@ -11,24 +11,28 @@ logger = logging.getLogger(__name__)
 
 
 class RoboFlow:
-    """Class that operates with roboflow api via uploading photo
-    to roboflow and parsing response
-    """
+    """Operate with roboflow API using roboflow package."""
 
     def __init__(self, model, bot_token: str):
+        """
+        Initialize roboflow service.
+
+        :param model: current roboflow model for project and version.
+        :param bot_token: required for uploading user photo to robofolow.
+        """
         self.model = model
         self.bot_token = bot_token
 
     def make_url(self, file_path):
+        """Make url which allow image being sent to roboflow."""
         return f"https://api.telegram.org/file/bot{self.bot_token}/{file_path}"
-
-    def make_img(self):
-        pass
 
     def parse_response(
         self, draw: ImageDraw.ImageDraw, response: dict[str, list[dict]]
     ) -> dict:
         """
+        Parse response from roboflow and draw boundary boxes on image.
+
         Example of roboflow response
         {
             "predictions": [
@@ -43,9 +47,8 @@ class RoboFlow:
                     "prediction_type": "ObjectDetectionModel"
                 }
             ]
-        }
+        }.
         """
-
         result: dict[str, float] = {}
         for prediction in response["predictions"]:
             class_ = prediction["class"]
@@ -59,17 +62,20 @@ class RoboFlow:
             draw.text((x1, y1), text=f"{class_} - {confidence:.2f}%", fill="darkorange")
         return result
 
-    async def recognize(
+    def recognize(
         self, file_bytes: io.BytesIO, file_path: str
     ) -> Optional[tuple[dict, bytes]]:
+        """Make prediction using roboflow API. Returns response with boundary boxes."""
         url = self.make_url(file_path)
         response: Optional[dict[str, list[dict]]] = self.model.predict(
             url, hosted=True
         ).json()
+
         if response:
             img = Image.open(file_bytes)
             draw = ImageDraw.Draw(img)
             result = self.parse_response(draw, response)
+
             # Saving image to bytes
             img_to_bytes = io.BytesIO()
             img.save(img_to_bytes, format=img.format)
@@ -81,6 +87,7 @@ class RoboFlow:
 
 
 def initialize_roboflow(settings: RoboFlowAPI, bot_token: str) -> RoboFlow:
+    """Initialize roboflow service with roboflow settings."""
     model = (
         roboflow.Roboflow(api_key=settings.private_key.get_secret_value())
         .workspace()

@@ -9,10 +9,11 @@ from .base import Base
 
 class Response(Base):
     """
-    Stores response from neural network.\n
-    response_image_id: str | None file id for downloadign if recognize was succesful.\n
-    generated_at: datetime when response was made. \n
-    uploaded_image_id: FK[UUID] image which should be recognized.\n
+    Stores response from neural network.
+
+    response_image_id: str | None file id for downloading if recognize was succesful.
+    generated_at: datetime when response was made.
+    uploaded_image_id: FK[UUID] image which should be recognized.
     model_id: FK[UUID] NN model which was used for recognition.
     """
 
@@ -29,7 +30,7 @@ class Response(Base):
     uploaded_image_id: Mapped[UUID] = mapped_column(ForeignKey("uploaded_images.id"))
     model_id: Mapped[UUID] = mapped_column(ForeignKey("neural_models.id"))
     # Alchemy relationships
-    objects: Mapped[list["Recognition"]] = relationship(  # type: ignore
+    objects: Mapped[list["RecognizedObject"]] = relationship(  # type: ignore
         back_populates="response"
     )
     uploaded_image: Mapped["UploadedImage"] = relationship(  # type: ignore

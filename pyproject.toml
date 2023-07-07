@@ -26,11 +26,20 @@ black = "^23.3.0"
 [tool.mypy]
 python = "3.10"
 ignore_missing_import = true
-disable_error_code = ["call-arg", "union-attr"]
+disable_error_code = ["call-arg", "union-attr", "arg-type", "index"]
 
-[[tool.mypy.overrides]]
-module = "bot.*"
-ignore_missing_import = true
+[tool.ruff]
+select = [
+    "E",
+    "F",
+    "D"
+]
+exclude = ["config.py"]
+ignore = ["D100", "D104", "D105", "D107", "F821"]
+
+[tool.ruff.pydocstyle]
+convention = "pep257"
+
 
 [build-system]
 requires = ["poetry-core"]

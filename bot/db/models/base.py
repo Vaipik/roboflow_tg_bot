@@ -8,14 +8,12 @@ uuid_pk = Annotated[
 ]
 
 
-class BaseModel(DeclarativeBase):
+class BaseModel(DeclarativeBase):  # noqa: D101
     pass
 
 
 class Base(BaseModel):
-    """
-    An abstract base model that makes id field as UUID field as primary key field
-    """
+    """An abstract base model that makes id field as UUID field as primary key field."""
 
     __abstract__ = True
 

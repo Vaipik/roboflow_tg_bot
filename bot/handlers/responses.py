@@ -13,6 +13,7 @@ response_router = Router()
 
 @response_router.message(F.text == CommonKeyBoardButtons.results)
 async def generate_responses(message: Message, state: FSMContext):
+    """Generate inline kb with previous user responses."""
     user_id = message.from_user.id
     await state.update_data(user_id=user_id, page=1)
     # responses = await db.get_responses(user_id, offset=0, limit=6)
@@ -29,6 +30,7 @@ async def generate_responses(message: Message, state: FSMContext):
     Text(ResponseKeyboardButtons.previous_callback_data),
 )
 async def previous_five_responses(callback: CallbackQuery, state: FSMContext):
+    """Generate previous user responses."""
     user_data = await state.get_data()
     page = user_data["page"] - 1
     responses = [
@@ -45,6 +47,7 @@ async def previous_five_responses(callback: CallbackQuery, state: FSMContext):
     ResponseStates.paginated_response, Text(ResponseKeyboardButtons.next_callback_data)
 )
 async def next_five_responses(callback: CallbackQuery, state: FSMContext):
+    """Generate next user responses."""
     user_data = await state.get_data()
     page = user_data["page"] + 1
     responses = [

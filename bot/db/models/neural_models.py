@@ -5,9 +5,10 @@ from .base import Base
 
 class NeuralModel(Base):
     """
-    Store information about NN.\n
-    name: str name of NN.\n
-    version: str version of NN.\n
+    Store information about NN.
+
+    name: str name of NN.
+    version: str version of NN.
     """
 
     __tablename__ = "neural_models"
@@ -18,5 +19,5 @@ class NeuralModel(Base):
         back_populates="model"
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"[NN {self.name}v{self.version}]"

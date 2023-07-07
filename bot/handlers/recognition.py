@@ -1,20 +1,24 @@
+import asyncio
 import logging
 
-from aiogram import Bot, F, Router, html
+from aiogram import Bot, F, Router
 from aiogram.filters import Text
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery, BufferedInputFile
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.db.models import NeuralModel, Recognition, Response
-from bot.db.repository.responses import ResponseRepository
 from bot.keyboards.common import make_main_keyboard, CommonKeyBoardButtons
 from bot.keyboards.recognition import (
     uploaded_photo_inline_kb,
     RecognitionKeyboardButtons,
+    recognition_kb,
+)
+from bot.db.models import NeuralModel
+from bot.db.repository import (
+    ResponseRepository,
+    UploadedImageRepository,
 )
 from bot.states import UploadingPhotoForm
-from bot.utils import RoboFlow
+from bot.utils import RoboFlow, text_templates
 
 logger = logging.getLogger(__name__)
 
@@ -23,24 +27,20 @@ recognition_router = Router()
 
 @recognition_router.message(F.text == CommonKeyBoardButtons.recognize)
 async def upload_image_command(message: Message, state: FSMContext):
-    """
-    This handler is for reply keyboard, and it is inital state for uploading photo.
-    """
+    """Process reply keyboard for uploading new photo."""
     await state.set_state(UploadingPhotoForm.waiting_upload)
     await message.answer(
-        text=f"Upload a photo with {html.bold('lego')} after this message",
+        text=text_templates.new_upload_photo_text(),
         reply_markup=ReplyKeyboardRemove(),
     )
 
 
 @recognition_router.callback_query(Text(RecognitionKeyboardButtons.no_button))
 async def upload_image_state(callback: CallbackQuery, state: FSMContext):
-    """
-    This handler is for inline keyboard, it makes opportunity to upload another photo.
-    """
+    """Upload another photo using inline kb response."""
     await state.set_state(UploadingPhotoForm.waiting_upload)
     await callback.message.answer(
-        text=f"Upload a photo with {html.bold('lego')} after this message",
+        text=text_templates.new_upload_photo_text(),
     )
     await callback.answer()
 
@@ -50,32 +50,27 @@ async def upload_image_state(callback: CallbackQuery, state: FSMContext):
     F.photo,
 )
 async def process_image(message: Message, state: FSMContext):
-    """
-    This handler is validataing that file is photo
-    updating user data by adding file_id in user data.
-    Also gives possibility to choose another photo.
-    """
-    file_id = message.photo[-1].file_id  # type: ignore # file that was sent to the bot
+    """Catch message with uploaded photo and draw inline kb as reply to message."""
+    file_id = message.photo[-1].file_id
+    file_unique_id = message.photo[-1].file_unique_id
     chat_id = message.chat.id
 
     await message.reply(
-        f"Okey, you have uploaded a photo.\n"
-        f"If you want to continue, click"
-        f"{html.bold(RecognitionKeyboardButtons.make_response)}\n"
-        f"if you want to upload another photo click "
-        f"{html.bold(RecognitionKeyboardButtons.upload_another)}",
-        reply_markup=uploaded_photo_inline_kb(),
+        text=text_templates.uploaded_photo_text(recognition_kb),
+        reply_markup=uploaded_photo_inline_kb(recognition_kb),
     )
 
-    await state.update_data(file_id=file_id, chat_id=chat_id)
+    await state.update_data(
+        file_id=file_id,
+        chat_id=chat_id,
+        file_unique_id=file_unique_id,
+    )
     await state.set_state(UploadingPhotoForm.answer)
 
 
 @recognition_router.message(UploadingPhotoForm.waiting_upload)
 async def process_document_image(message: Message):
-    """
-    This handler is letting a user know that uploaded file is not photo
-    """
+    """Response to user when wrong file was downloaded."""
     await message.answer(text="You need to upload compressed image")
 
 
@@ -86,64 +81,68 @@ async def generate_response(
     callback: CallbackQuery,
     state: FSMContext,
     bot: Bot,
+    model: NeuralModel,
     roboflow_api: RoboFlow,
     responses_repo: ResponseRepository,
-    session: AsyncSession,  # TODO: remove session to repo ?
+    uploaded_images_repo: UploadedImageRepository,
 ):
-    """
-    Handler getting uploaded user photo into BytesIO,
-    making request to roboflow api using photo in BytesIO
-    and proceed it to the user via message
-    """
+    """Check previous response for image, and store response from roboflow to db."""
     user_data = await state.get_data()
     file_id = user_data["file_id"]
+    file_unique_id = user_data["file_unique_id"]
     chat_id = user_data["chat_id"]
-    checked_image = await responses_repo.check_user_image(file_id, chat_id)
+    # check was previous image uploaded or not
+    checked_image = await uploaded_images_repo.check_image(file_unique_id, chat_id)
     if checked_image:
-        pass  # TODO: response
-    file = await bot.get_file(file_id)
-    file_path = file.file_path
-    if file_path is None:
-        return
-
-    file_bytes = await bot.download_file(file_path)
-    labels, *image_bytes = await roboflow_api.recognize(file_bytes, file_path)
-
-    if labels:
-        img = BufferedInputFile(*image_bytes, "response.jpg")
-        recognized_image = await callback.message.answer_photo(
-            photo=img,
-            caption="I have following answer according to your request:\n"
-            + "\n".join(
-                [
-                    f"Label <b>{label}</b>: met <b>{amount}</b> times"
-                    for label, amount in labels.items()
-                ]
+        previous_response = await responses_repo.get_user_response(
+            uploaded_image_id=checked_image.id, model=model
+        )
+        await callback.message.answer_photo(
+            photo=previous_response.recognized_image_id,
+            caption=text_templates.roboflow_success_response(
+                previous_response.get_labels()
             ),
             reply_markup=make_main_keyboard(),
         )
-        logger.info(recognized_image)
-        recognized_image_id = recognized_image.photo[0].file_id
-        logger.info(recognized_image_id)
-        model = NeuralModel(name="duplo-bricks", version="2")
-        session.add(model)
-        await session.flush()
-        response = Response(
-            image_id=file_id,
-            chat_id=chat_id,
-            model_id=model.id,
-            recognized_image_id=recognized_image_id,
-        )
-        session.add(response)
-        objects = [
-            Recognition(label=label, amount=amount, response=response)
-            for label, amount in labels.items()
-        ]
-        session.add_all(objects)
-        await session.commit()
+        await callback.answer()
     else:
-        await callback.message.answer(
-            text="Unfortunately i was not able to recognize anything❤️‍🩹"
+        # Save current uploaded image to images
+        uploaded_image = await uploaded_images_repo.save_image(
+            file_id, file_unique_id, chat_id
         )
 
+        file = await bot.get_file(file_id)
+        file_path = file.file_path
+        file_bytes = await bot.download_file(file_path)
+
+        loop = asyncio.get_event_loop()
+        roboflow_response = await loop.run_in_executor(  # roboflow package is sync
+            None,
+            roboflow_api.recognize,
+            file_bytes,
+            file_path,
+        )
+
+        if roboflow_response is not None:
+            labels, image_bytes = roboflow_response
+            img = BufferedInputFile(image_bytes, f"{file_id}.jpg")
+
+            recognized_image = await callback.message.answer_photo(
+                photo=img,
+                caption=text_templates.roboflow_success_response(labels),
+                reply_markup=make_main_keyboard(),
+            )
+            recognized_image_id = recognized_image.photo[0].file_id  # type: ignore
+            await responses_repo.save_response(
+                uploaded_image_id=uploaded_image.id,
+                model=model,
+                objects=labels,
+                recognized_image_id=recognized_image_id,
+            )
+
+        else:
+            await callback.message.answer(
+                text="Unfortunately i was not able to recognize anything❤️‍🩹"
+            )
+    # await responses_repo.save_response
     await callback.answer(text="Redirecting to main menu", show_alert=True)

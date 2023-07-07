@@ -10,6 +10,7 @@ common_router = Router()
 
 @common_router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
+    """Entry command for tg bot."""
     await state.clear()
     await message.answer(
         text="What do you want to do ?\n", reply_markup=make_main_keyboard()
@@ -19,5 +20,6 @@ async def cmd_start(message: Message, state: FSMContext):
 @common_router.message(Command("cancel"))
 @common_router.message(Text(text="cancel", ignore_case=True))
 async def cmd_cancel(message: Message, state: FSMContext):
+    """Stop all operations wherever they are."""
     await state.clear()
     await message.answer(text="Action cancelled", reply_markup=ReplyKeyboardRemove())

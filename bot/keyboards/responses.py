@@ -6,6 +6,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 @dataclass(frozen=True)
 class ResponseKeyboardButtons:
+    """Dataclass for responses kb."""
+
     next_callback_data: str = "next_six"  # button name - next, callback data - next_six
     previous_callback_data: str = (
         "previous_six"  # button name - next, callback data - next_six
@@ -21,12 +23,13 @@ def make_paginate_keyboard(
     kb_buttons: ResponseKeyboardButtons = ResponseKeyboardButtons(),
 ) -> InlineKeyboardMarkup:
     """
-    Generating responses 3 in a row with buttons for next and previous six responses
+    Generate responses 3 in a row with buttons for next and previous six responses.
+
     :param responses: list of responses that should be shown
     :param total_responses:
     :param page:
     :param kb_buttons:
-    :return: keyboard
+    :return: keyboard.
     """
     pages = total_responses // 6
 

@@ -15,10 +15,16 @@ class RoboFlowAPI(BaseSettings):
     project_id: SecretStr
 
 
+class NeuralNetwork(BaseSettings):
+    name: str
+    version: str
+
+
 class Settings(BaseSettings):
     bot_token: SecretStr
-    roboflow: RoboFlowAPI
     db: DataBase
+    nn: NeuralNetwork
+    roboflow: RoboFlowAPI
 
     class Config:
         env_file = ".env"
