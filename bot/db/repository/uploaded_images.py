@@ -1,4 +1,5 @@
 import logging
+from uuid import UUID
 
 from sqlalchemy import select
 
@@ -14,7 +15,7 @@ class UploadedImageRepository(SQLAlchemyRepository):
 
     async def save_image(
         self, file_id: str, file_unique_id: str, chat_id: int
-    ) -> UploadedImage:
+    ) -> UUID:
         """
         Save imaga sent by user.
 
@@ -30,22 +31,22 @@ class UploadedImageRepository(SQLAlchemyRepository):
         self.session.add(new_image)
         await self.session.commit()
         await self.session.refresh(new_image)
-        return new_image
+        pk = new_image.id
+        return pk
 
     async def check_image(
         self, file_unique_id: str, chat_id: int
-    ) -> UploadedImage | None:
+    ) -> UUID | None:
         """
         Check was image sent previously or not.
 
         :param file_unique_id: unique identifier that will be checked
         :param chat_id: chat id in which file was sent
-        :return: ORM instance if it exists otherwise None.
+        :return: Primary key of image or None.
         """
-        stmt = select(UploadedImage).where(
+        stmt = select(UploadedImage.id).where(
             UploadedImage.file_unique_id == file_unique_id,
             UploadedImage.chat_id == chat_id,
         )
         result = await self.session.scalar(stmt)
-        logger.info(f"\n\n\n{result}\n\n\n")
         return result

@@ -91,11 +91,12 @@ async def generate_response(
     file_id = user_data["file_id"]
     file_unique_id = user_data["file_unique_id"]
     chat_id = user_data["chat_id"]
+
     # check was previous image uploaded or not
     checked_image = await uploaded_images_repo.check_image(file_unique_id, chat_id)
     if checked_image:
         previous_response = await responses_repo.get_user_response(
-            uploaded_image_id=checked_image.id, model=model
+            uploaded_image_id=checked_image, model=model
         )
         await callback.message.answer_photo(
             photo=previous_response.recognized_image_id,
@@ -105,15 +106,16 @@ async def generate_response(
             reply_markup=make_main_keyboard(),
         )
         await callback.answer()
+
     else:
         # Save current uploaded image to images
-        uploaded_image = await uploaded_images_repo.save_image(
+        uploaded_image_id = await uploaded_images_repo.save_image(
             file_id, file_unique_id, chat_id
         )
 
         file = await bot.get_file(file_id)
         file_path = file.file_path
-        file_bytes = await bot.download_file(file_path)
+        file_bytes = await bot.download_file(file_path)  # Save image to bytes
 
         loop = asyncio.get_event_loop()
         roboflow_response = await loop.run_in_executor(  # roboflow package is sync
@@ -134,7 +136,7 @@ async def generate_response(
             )
             recognized_image_id = recognized_image.photo[0].file_id  # type: ignore
             await responses_repo.save_response(
-                uploaded_image_id=uploaded_image.id,
+                uploaded_image_id=uploaded_image_id,
                 model=model,
                 objects=labels,
                 recognized_image_id=recognized_image_id,
@@ -144,5 +146,9 @@ async def generate_response(
             await callback.message.answer(
                 text="Unfortunately i was not able to recognize anything❤️‍🩹"
             )
-    # await responses_repo.save_response
+            await responses_repo.save_response(
+                uploaded_image_id=uploaded_image_id,
+                model=model
+            )
+
     await callback.answer(text="Redirecting to main menu", show_alert=True)

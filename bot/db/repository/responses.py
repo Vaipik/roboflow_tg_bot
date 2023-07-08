@@ -31,9 +31,7 @@ class ResponseRepository(SQLAlchemyRepository):
                 UploadedImage.chat_id == chat_id,
             )
         )
-        logger.info(statement)
         response = await self.session.scalar(statement)
-        logger.info(response)
         return response
 
     async def check_user_response(
@@ -50,7 +48,6 @@ class ResponseRepository(SQLAlchemyRepository):
             Response.uploaded_image_id == uploaded_image_id, Response.model == model
         )
         response = await self.session.scalars(statement)
-        logger.info(response)
         return True if response else False
 
     async def get_user_response(
@@ -71,9 +68,7 @@ class ResponseRepository(SQLAlchemyRepository):
             .options(joinedload(Response.objects, innerjoin=True))
         )
 
-        logger.info(stmt)
         response = await self.session.scalar(stmt)
-        logger.info(type(response.objects))
         result = dto.Response(
             recognized_image_id=response.response_image_id, objects=response.objects
         )
@@ -83,7 +78,7 @@ class ResponseRepository(SQLAlchemyRepository):
         self,
         uploaded_image_id: UUID,
         model: NeuralModel,
-        objects: dict[str, int],
+        objects: dict[str, int] | None = None,
         recognized_image_id: str | None = None,
     ) -> None:
         """
@@ -100,10 +95,9 @@ class ResponseRepository(SQLAlchemyRepository):
             model=model,
             response_image_id=recognized_image_id,
         )
-        objects_list = [
+        [
             RecognizedObject(label=label, amount=amount, response=response)
             for label, amount in objects.items()
         ]
         self.session.add(response)
-        logger.info(f"{objects_list[0] in self.session}")
         await self.session.commit()
