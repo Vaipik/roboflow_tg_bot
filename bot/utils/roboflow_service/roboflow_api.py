@@ -1,10 +1,11 @@
 import io
 import logging
-from typing import Optional
+from pathlib import Path
 
-import roboflow  # type: ignore
+import roboflow
+from roboflow.models.object_detection import ObjectDetectionModel
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 from bot.config import RoboFlowAPI
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 class RoboFlow:
     """Operate with roboflow API using roboflow package."""
 
-    def __init__(self, model, bot_token: str):
+    def __init__(self, model: ObjectDetectionModel, bot_token: str, font_path: Path):
         """
         Initialize roboflow service.
 
@@ -22,6 +23,7 @@ class RoboFlow:
         """
         self.model = model
         self.bot_token = bot_token
+        self.font_path = font_path
 
     def make_url(self, file_path):
         """Make url which allow image being sent to roboflow."""
@@ -49,31 +51,45 @@ class RoboFlow:
             ]
         }.
         """
+        print(self.font_path)
         result: dict[str, float] = {}
-        for prediction in response["predictions"]:
-            class_ = prediction["class"]
+        with open(self.font_path, "rb") as f:
+            font = ImageFont.truetype(font=f, size=14)
+
+        for prediction in sorted(
+            response["predictions"], key=lambda x: (len(x["class"]), x["class"])
+        ):
+            label = prediction["class"]
             confidence = prediction["confidence"] * 100  # convert to %
-            result[class_] = result.get(class_, 0) + 1
+            result[label] = result.get(label, 0) + 1
+
             x1 = prediction["x"] - prediction["width"] / 2
             x2 = prediction["x"] + prediction["width"] / 2
             y1 = prediction["y"] - prediction["height"] / 2
             y2 = prediction["y"] + prediction["height"] / 2
-            draw.rectangle((x1, y1, x2, y2), outline="darkorange")
-            draw.text((x1, y1), text=f"{class_} - {confidence:.2f}%", fill="darkorange")
+
+            draw.rectangle(((x1, y1), (x2, y2)), fill=(25, 25, 112, 140))
+            draw.rectangle(((x1, y1), (x2, y2)), outline=(225, 225, 0, 255), width=3)
+            draw.text(
+                (x1 + 5, y1 - 15),
+                text=f"{label} - {confidence:.2f}%",
+                fill="yellow",
+                font=font,
+            )
         return result
 
     def recognize(
         self, file_bytes: io.BytesIO, file_path: str
-    ) -> Optional[tuple[dict, bytes]]:
+    ) -> tuple[dict, bytes] | None:
         """Make prediction using roboflow API. Returns response with boundary boxes."""
         url = self.make_url(file_path)
-        response: Optional[dict[str, list[dict]]] = self.model.predict(
+        response: dict[str, list[dict]] | None = self.model.predict(
             url, hosted=True
         ).json()
 
         if response:
             img = Image.open(file_bytes)
-            draw = ImageDraw.Draw(img)
+            draw = ImageDraw.Draw(img, "RGBA")
             result = self.parse_response(draw, response)
 
             # Saving image to bytes
@@ -88,6 +104,7 @@ class RoboFlow:
 
 def initialize_roboflow(settings: RoboFlowAPI, bot_token: str) -> RoboFlow:
     """Initialize roboflow service with roboflow settings."""
+    FONT_DIR = Path(__file__).parent
     model = (
         roboflow.Roboflow(api_key=settings.private_key.get_secret_value())
         .workspace()
@@ -95,6 +112,8 @@ def initialize_roboflow(settings: RoboFlowAPI, bot_token: str) -> RoboFlow:
         .version(2)
         .model
     )
-
-    roboflow_api = RoboFlow(model, bot_token)
+    logger.info(type(model))
+    roboflow_api = RoboFlow(
+        model=model, bot_token=bot_token, font_path=FONT_DIR / "FreeMonospacedBold.ttf"
+    )
     return roboflow_api
