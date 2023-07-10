@@ -1,6 +1,6 @@
 from bot.config import NeuralNetwork
-from bot.db.models import NeuralModel
-from bot.db.repository import NeuralModelRepository
+from bot.infrastructure.db.models import NeuralModel
+from bot.infrastructure.db.repository import NeuralModelRepository
 
 
 async def get_model(nn_params: NeuralNetwork, sessionmaker) -> NeuralModel:

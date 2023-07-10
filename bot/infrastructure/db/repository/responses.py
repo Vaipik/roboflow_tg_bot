@@ -5,7 +5,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from bot import dto
-from bot.db.models import RecognizedObject, Response, UploadedImage, NeuralModel
+from bot.infrastructure.db.models import (
+    RecognizedObject,
+    Response,
+    UploadedImage,
+    NeuralModel,
+)
 from .base import SQLAlchemyRepository
 
 
@@ -100,4 +105,3 @@ class ResponseRepository(SQLAlchemyRepository):
             for label, amount in objects.items()
         ]
         self.session.add(response)
-        await self.session.commit()

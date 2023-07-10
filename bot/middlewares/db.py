@@ -4,10 +4,8 @@ from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from bot.db.repository import (
-    ResponseRepository,
-    UploadedImageRepository,
-)
+from bot.infrastructure.db.uow import SQLAlchemyUoW
+from bot.infrastructure.db.repository import ResponseRepository, UploadedImageRepository
 
 
 class DBSessionMiddleware(BaseMiddleware):
@@ -26,7 +24,9 @@ class DBSessionMiddleware(BaseMiddleware):
     ):
         """Put repositories in context when middleware calls."""
         async with self.sessionmaker() as session:
-            data["session"] = session
-            data["responses_repo"] = ResponseRepository(session)
-            data["uploaded_images_repo"] = UploadedImageRepository(session)
+            data["uow"] = SQLAlchemyUoW(
+                session=session,
+                responses_repo=ResponseRepository,
+                uploaded_images_repo=UploadedImageRepository,
+            )
             return await handler(event, data)

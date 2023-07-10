@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import select
 
 from .base import SQLAlchemyRepository
-from bot.db.models import UploadedImage
+from bot.infrastructure.db.models import UploadedImage
 
 
 logger = logging.getLogger(__name__)
@@ -13,9 +13,7 @@ logger = logging.getLogger(__name__)
 class UploadedImageRepository(SQLAlchemyRepository):
     """Is used to perform operations with files sent by user."""
 
-    async def save_image(
-        self, file_id: str, file_unique_id: str, chat_id: int
-    ) -> UUID:
+    async def save_image(self, file_id: str, file_unique_id: str, chat_id: int) -> UUID:
         """
         Save imaga sent by user.
 
@@ -29,14 +27,11 @@ class UploadedImageRepository(SQLAlchemyRepository):
             file_id=file_id, file_unique_id=file_unique_id, chat_id=chat_id
         )
         self.session.add(new_image)
-        await self.session.commit()
-        await self.session.refresh(new_image)
+        await self.session.flush([new_image])
         pk = new_image.id
         return pk
 
-    async def check_image(
-        self, file_unique_id: str, chat_id: int
-    ) -> UUID | None:
+    async def check_image(self, file_unique_id: str, chat_id: int) -> UUID | None:
         """
         Check was image sent previously or not.
 

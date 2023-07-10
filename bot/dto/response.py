@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from bot.db import models
+from bot.infrastructure.db import models
 
 
 @dataclass(frozen=True)

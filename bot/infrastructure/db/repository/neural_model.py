@@ -1,7 +1,7 @@
 from sqlalchemy import select
 
 from .base import SQLAlchemyRepository
-from bot.db.models import NeuralModel
+from bot.infrastructure.db.models import NeuralModel
 
 
 class NeuralModelRepository(SQLAlchemyRepository):

@@ -5,11 +5,11 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from alembic import context
+from alembic import context  # type: ignore
 
-from bot.db.models import Base
+from bot.infrastructure.db.models import Base
 
-# from bot.config import cfg
+from bot.config import cfg
 
 target_metadata = Base.metadata
 
@@ -18,8 +18,7 @@ target_metadata = Base.metadata
 config = context.config
 config.set_main_option(
     "sqlalchemy.url",
-    "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/roboflow"
-    # f"postgresql+asyncpg://{cfg.db.user}:{cfg.db.password}@{cfg.db.host}:{cfg.db.port}/{cfg.db.name}"
+    f"postgresql+asyncpg://{cfg.db.user}:{cfg.db.password}@{cfg.db.host}:{cfg.db.port}/{cfg.db.name}",
 )
 
 # Interpret the config file for Python logging.
@@ -72,7 +71,6 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     """In this scenario we need to create an Engine
     and associate a connection with the context.
-
     """
 
     connectable = async_engine_from_config(
@@ -89,7 +87,6 @@ async def run_async_migrations() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-
     asyncio.run(run_async_migrations())
 
 

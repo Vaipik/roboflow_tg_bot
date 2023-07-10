@@ -1,6 +1,7 @@
 import io
 import logging
 from pathlib import Path
+from typing import Any
 
 import roboflow
 from roboflow.models.object_detection import ObjectDetectionModel
@@ -25,13 +26,13 @@ class RoboFlow:
         self.bot_token = bot_token
         self.font_path = font_path
 
-    def make_url(self, file_path):
+    def make_url(self, file_path) -> str:
         """Make url which allow image being sent to roboflow."""
         return f"https://api.telegram.org/file/bot{self.bot_token}/{file_path}"
 
     def parse_response(
-        self, draw: ImageDraw.ImageDraw, response: dict[str, list[dict]]
-    ) -> dict:
+        self, draw: ImageDraw.ImageDraw, response: list[dict[str, Any]]
+    ) -> dict[str, int | float]:
         """
         Parse response from roboflow and draw boundary boxes on image.
 
@@ -56,9 +57,7 @@ class RoboFlow:
         with open(self.font_path, "rb") as f:
             font = ImageFont.truetype(font=f, size=14)
 
-        for prediction in sorted(
-            response["predictions"], key=lambda x: (len(x["class"]), x["class"])
-        ):
+        for prediction in sorted(response, key=lambda x: (len(x["class"]), x["class"])):
             label = prediction["class"]
             confidence = prediction["confidence"] * 100  # convert to %
             result[label] = result.get(label, 0) + 1
@@ -86,11 +85,11 @@ class RoboFlow:
         response: dict[str, list[dict]] | None = self.model.predict(
             url, hosted=True
         ).json()
-
-        if response:
+        predictions = response.get("predictions")
+        if predictions:
             img = Image.open(file_bytes)
             draw = ImageDraw.Draw(img, "RGBA")
-            result = self.parse_response(draw, response)
+            result = self.parse_response(draw, predictions)
 
             # Saving image to bytes
             img_to_bytes = io.BytesIO()
