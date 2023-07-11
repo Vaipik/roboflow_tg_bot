@@ -18,7 +18,7 @@ async def main():
     """Entry point for application."""
     engine = create_async_engine(
         f"postgresql+asyncpg://{cfg.db.user}:{cfg.db.password}@{cfg.db.host}:{cfg.db.port}/{cfg.db.name}",
-        echo=True,
+        # echo=True,
     )
 
     sessionmaker = async_sessionmaker(engine, expire_on_commit=False)

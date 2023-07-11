@@ -74,6 +74,7 @@ class ResponseRepository(SQLAlchemyRepository):
         )
 
         response = await self.session.scalar(stmt)
+        logger.error(response)
         result = dto.Response(
             recognized_image_id=response.response_image_id, objects=response.objects
         )
