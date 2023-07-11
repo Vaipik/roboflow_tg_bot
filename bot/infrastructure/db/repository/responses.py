@@ -39,25 +39,17 @@ class ResponseRepository(SQLAlchemyRepository):
         response = await self.session.scalar(statement)
         return response
 
-    async def check_user_response(
-        self, uploaded_image_id: str, model: NeuralModel
-    ) -> bool:
-        """
-        Was user request successful or not.
-
-        :param uploaded_image_id: the image id to be checked
-        :param model: instance of NN for which request was performed
-        :return: True if response was successful False it wasn't.
-        """
-        statement = select(Response.response_image_id).where(
-            Response.uploaded_image_id == uploaded_image_id, Response.model == model
-        )
-        response = await self.session.scalars(statement)
-        return True if response else False
-
-    async def get_user_response(
+    async def get_response_by_uploaded_image_id(
         self, uploaded_image_id: UUID, model: NeuralModel
     ) -> dto.Response:
+        """Return DTO for response table model."""
+        return (
+            await self._get_response_by_uploaded_image_id(uploaded_image_id, model)
+        ).to_dto()
+
+    async def _get_response_by_uploaded_image_id(
+        self, uploaded_image_id: UUID, model: NeuralModel
+    ) -> Response | None:
         """
         Return user response with recognized objects for given image_id.
 
@@ -73,11 +65,7 @@ class ResponseRepository(SQLAlchemyRepository):
             .options(joinedload(Response.objects, innerjoin=True))
         )
 
-        response = await self.session.scalar(stmt)
-        logger.error(response)
-        result = dto.Response(
-            recognized_image_id=response.response_image_id, objects=response.objects
-        )
+        result = await self.session.scalar(stmt)
         return result
 
     async def save_response(
@@ -101,8 +89,9 @@ class ResponseRepository(SQLAlchemyRepository):
             model=model,
             response_image_id=recognized_image_id,
         )
-        [
-            RecognizedObject(label=label, amount=amount, response=response)
-            for label, amount in objects.items()
-        ]
+        if response.response_image_id:
+            [
+                RecognizedObject(label=label, amount=amount, response=response)
+                for label, amount in objects.items()
+            ]
         self.session.add(response)

@@ -16,9 +16,10 @@ logger = logging.getLogger(__name__)
 
 async def main():
     """Entry point for application."""
+    db = cfg.db
     engine = create_async_engine(
-        f"postgresql+asyncpg://{cfg.db.user}:{cfg.db.password}@{cfg.db.host}:{cfg.db.port}/{cfg.db.name}",
-        # echo=True,
+        f"postgresql+asyncpg://{db.user}:{db.password}@{db.host}:{db.port}/{db.name}",
+        echo=True,
     )
 
     sessionmaker = async_sessionmaker(engine, expire_on_commit=False)

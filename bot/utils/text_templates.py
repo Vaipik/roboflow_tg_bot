@@ -19,6 +19,11 @@ def roboflow_success_response(labels: dict[str, int]) -> str:
     return result
 
 
+def roboflow_empty_response() -> str:
+    """Generate string when response is None."""
+    return "Unfortunately i was not able to recognize anything❤️‍🩹"
+
+
 def new_upload_photo_text() -> str:
     """Text displayed when user click on Generate New or choose another upload."""
     return f"Upload a photo with {html.bold('lego')} after this message"

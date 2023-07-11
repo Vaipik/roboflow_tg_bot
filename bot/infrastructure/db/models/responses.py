@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import ForeignKey, UniqueConstraint, TIMESTAMP, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from bot import dto
 from .base import Base
 
 
@@ -42,3 +43,9 @@ class Response(Base):
 
     def __repr__(self) -> str:
         return f"[R {self.response_image_id=} | {self.uploaded_image_id}]"
+
+    def to_dto(self) -> dto.Response:
+        """Convert to dto."""
+        return dto.Response(
+            recognized_image_id=self.response_image_id, objects=self.objects
+        )
