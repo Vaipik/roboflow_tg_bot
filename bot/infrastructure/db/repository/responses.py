@@ -95,3 +95,34 @@ class ResponseRepository(SQLAlchemyRepository):
                 for label, amount in objects.items()
             ]
         self.session.add(response)
+
+    async def get_user_responses(
+        self, chat_id: int, offset: int = 0, limit: int = 6
+    ) -> list[dto.Response] | None:
+        """Return list of user respones in dto.Response or None."""
+        result = await self._get_user_responses(chat_id, offset, limit)
+        if result:
+            return [row.to_dto() for row in result]
+
+        return None
+
+    async def _get_user_responses(self, chat_id: int, offset: int = 0, limit: int = 6):
+        """
+        User responses with offset and limit. Default offset is 0 and limit is 6.
+
+        :param chat_id: user identifier.
+        :param offset: how much should be skipped. Used for pagination.
+        :param limit:  how much should be returned. Used for pagination.
+        :return:
+        """
+        stmt = (
+            select(Response)
+            .join(Response.uploaded_image)
+            .where(UploadedImage.chat_id == chat_id)
+            .order_by(Response.generated_at)
+            .offset(offset)
+            .limit(limit)
+            .options(joinedload(Response.objects, innerjoin=True))
+        )
+        response = await self.session.scalars(stmt)
+        return response.unique().all()
