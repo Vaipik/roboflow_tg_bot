@@ -76,6 +76,35 @@ async def process_document_image(message: Message):
 @recognition_router.callback_query(
     UploadingPhotoForm.answer,
     Text(RecognitionKeyboardButtons.yes_button),
+    CheckImageFilter(),
+)
+async def check_previous_response(
+    callback: CallbackQuery,
+    model: NeuralModel,
+    uow: SQLAlchemyUoW,
+    checked_image_id: UUID,
+):
+    """Response for previously made response."""
+    previous_response = await uow.responses.get_response_by_uploaded_image_id(
+        uploaded_image_id=checked_image_id, model=model
+    )
+    if previous_response.recognized_image_id:
+        response_text = text_templates.roboflow_success_response(
+            previous_response.get_labels()
+        )
+    else:
+        response_text = text_templates.roboflow_empty_response()
+    await callback.message.answer_photo(
+        photo=previous_response.recognized_image_id,
+        caption=response_text,
+        reply_markup=make_main_keyboard(),
+    )
+    await callback.answer(text="Redirecting to main menu", show_alert=True)
+
+
+@recognition_router.callback_query(
+    UploadingPhotoForm.answer,
+    Text(RecognitionKeyboardButtons.yes_button),
 )
 async def generate_response(
     callback: CallbackQuery,
@@ -134,33 +163,4 @@ async def generate_response(
         )
 
     await uow.commit()
-    await callback.answer(text="Redirecting to main menu", show_alert=True)
-
-
-@recognition_router.callback_query(
-    UploadingPhotoForm.answer,
-    Text(RecognitionKeyboardButtons.yes_button),
-    CheckImageFilter(),
-)
-async def check_previous_response(
-    callback: CallbackQuery,
-    model: NeuralModel,
-    uow: SQLAlchemyUoW,
-    checked_image_id: UUID,
-):
-    """Response for previously made response."""
-    previous_response = await uow.responses.get_response_by_uploaded_image_id(
-        uploaded_image_id=checked_image_id, model=model
-    )
-    if previous_response.recognized_image_id:
-        response_text = text_templates.roboflow_success_response(
-            previous_response.get_labels()
-        )
-    else:
-        response_text = text_templates.roboflow_empty_response()
-    await callback.message.answer_photo(
-        photo=previous_response.recognized_image_id,
-        caption=response_text,
-        reply_markup=make_main_keyboard(),
-    )
     await callback.answer(text="Redirecting to main menu", show_alert=True)
