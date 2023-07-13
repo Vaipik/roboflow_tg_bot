@@ -159,7 +159,10 @@ async def generate_response(
         )
 
     else:
-        await callback.message.answer(text=text_templates.roboflow_empty_response())
+        await callback.message.answer(
+            text=text_templates.roboflow_empty_response(),
+            reply_markup=make_main_keyboard(),
+        )
         await uow.responses.save_response(
             uploaded_image_id=uploaded_image_id, model=model
         )

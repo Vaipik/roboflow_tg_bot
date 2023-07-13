@@ -1,7 +1,7 @@
 import logging
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, func, desc
 from sqlalchemy.orm import joinedload
 
 from bot import dto
@@ -119,10 +119,40 @@ class ResponseRepository(SQLAlchemyRepository):
             select(Response)
             .join(Response.uploaded_image)
             .where(UploadedImage.chat_id == chat_id)
-            .order_by(Response.generated_at)
+            .order_by(desc(Response.generated_at))
             .offset(offset)
             .limit(limit)
             .options(joinedload(Response.objects, innerjoin=True))
         )
         response = await self.session.scalars(stmt)
         return response.unique().all()
+
+    async def count_responses(self, chat_id: int) -> int | None:
+        """
+        Count amount of user responses.
+
+        :param chat_id: chat identtifier
+        :return: total amount of chat(user) responses or None.
+        """
+        stmt = (
+            select(func.count(Response.id))
+            .join(Response.uploaded_image)
+            .where(UploadedImage.chat_id == chat_id)
+        )
+        response = await self.session.execute(stmt)
+        print(stmt)
+        return response.scalar_one_or_none()
+
+    async def get_user_response_by_id(self, id: UUID | str) -> dto.Response:
+        """Get response from db and converts it do dto.Response."""
+        response = await self._get_user_response_by_id(id)
+        return response.to_dto()
+
+    async def _get_user_response_by_id(self, id: UUID | str) -> Response | None:
+        stmt = (
+            select(Response)
+            .where(Response.id == id)
+            .options(joinedload(Response.objects, innerjoin=True))
+        )
+        result = await self.session.scalar(stmt)
+        return result

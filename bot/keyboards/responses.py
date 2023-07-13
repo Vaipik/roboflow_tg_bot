@@ -1,7 +1,12 @@
+import logging
 from dataclasses import dataclass
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+
+from bot import dto
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -17,8 +22,8 @@ class ResponseKeyboardButtons:
 
 
 def make_paginate_keyboard(
-    responses: list,
-    total_responses: int,
+    responses: list[dto.Response],
+    pages: int,
     page: int,
     kb_buttons: ResponseKeyboardButtons = ResponseKeyboardButtons(),
 ) -> InlineKeyboardMarkup:
@@ -26,30 +31,32 @@ def make_paginate_keyboard(
     Generate responses 3 in a row with buttons for next and previous six responses.
 
     :param responses: list of responses that should be shown
-    :param total_responses:
+    :param pages:
     :param page:
     :param kb_buttons:
     :return: keyboard.
     """
-    pages = total_responses // 6
-
     builder = InlineKeyboardBuilder()
-    for i in range(0, len(responses), 3):
+    logger.info(type(str(responses[0].id)))
+    logger.info(str(responses[0].id))
+    for i in range(0, len(responses), 2):
         builder.row(
             *[
-                InlineKeyboardButton(text=response, callback_data="pass")
-                for response in responses[i : i + 3]
+                InlineKeyboardButton(
+                    text=response.generated_at, callback_data=str(response.id)
+                )
+                for response in responses[i : i + 2]
             ]
         )
     builder.row(
         InlineKeyboardButton(
             text=kb_buttons.previous_button_text,
-            callback_data=kb_buttons.previous_callback_data,
+            callback_data=kb_buttons.previous_callback_data if page > 1 else "pass",
         ),
         InlineKeyboardButton(text=f"{page}/{pages}", callback_data="pass"),
         InlineKeyboardButton(
             text=kb_buttons.next_button_text,
-            callback_data=kb_buttons.next_callback_data,
+            callback_data=kb_buttons.next_callback_data if page < pages else "pass",
         ),
     )
 

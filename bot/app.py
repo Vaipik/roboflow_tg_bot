@@ -20,7 +20,7 @@ async def main():
     db = cfg.db
     engine = create_async_engine(
         f"postgresql+asyncpg://{db.user}:{db.password}@{db.host}:{db.port}/{db.name}",
-        echo=True,
+        # echo=True,
     )
 
     sessionmaker = async_sessionmaker(engine, expire_on_commit=False)

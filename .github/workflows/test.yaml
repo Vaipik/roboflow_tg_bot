@@ -1,5 +1,5 @@
 name: ruff
-run-name: ${{ github.actor }} ruff code checking
+run-name: ${{ github.actor }} ruff and tests code checking
 on: [ push, pull_request ]
 jobs:
   build:

@@ -1,4 +1,4 @@
-def get_pages(total_items: int, items_per_page: int) -> int:
+def get_pages(total_items: int, items_per_page: int = 6) -> int:
     """
     Implement pagioation.
 

@@ -1,26 +1,37 @@
+import logging
+
 from aiogram import F, Router
 from aiogram.filters import Text
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
-from bot.keyboards.common import CommonKeyBoardButtons
+from bot.infrastructure.db.uow import SQLAlchemyUoW
+from bot.keyboards.common import CommonKeyBoardButtons, make_main_keyboard
 from bot.keyboards.responses import ResponseKeyboardButtons, make_paginate_keyboard
 from bot.states.responses import ResponseStates
+from bot.utils.paginator import get_pages
+from bot.utils import text_templates
 
 
+logger = logging.getLogger(__name__)
 response_router = Router()
 
 
 @response_router.message(F.text == CommonKeyBoardButtons.results)
-async def generate_responses(message: Message, state: FSMContext):
+async def generate_responses(message: Message, state: FSMContext, uow: SQLAlchemyUoW):
     """Generate inline kb with previous user responses."""
-    user_id = message.from_user.id
-    await state.update_data(user_id=user_id, page=1)
-    # responses = await db.get_responses(user_id, offset=0, limit=6)
-    responses = [f"response_{i}" for i in range(1, 19)]
+    chat_id = message.from_user.id
+    responses = await uow.responses.get_user_responses(chat_id, offset=0, limit=6)
+
+    pages = get_pages(await uow.responses.count_responses(chat_id))
+    await state.update_data(
+        chat_id=chat_id,
+        page=1,
+        pages=pages,
+    )
     await message.answer(
         text="Responses:",
-        reply_markup=make_paginate_keyboard(responses, len(responses) * 2, 1),
+        reply_markup=make_paginate_keyboard(responses, pages, 1),
     )
     await state.set_state(ResponseStates.paginated_response)
 
@@ -29,16 +40,25 @@ async def generate_responses(message: Message, state: FSMContext):
     ResponseStates.paginated_response,
     Text(ResponseKeyboardButtons.previous_callback_data),
 )
-async def previous_five_responses(callback: CallbackQuery, state: FSMContext):
+async def previous_five_responses(
+    callback: CallbackQuery, state: FSMContext, uow: SQLAlchemyUoW
+):
     """Generate previous user responses."""
     user_data = await state.get_data()
     page = user_data["page"] - 1
-    responses = [
-        f"response_{i}" for i in range(1 + 19 * (page - 1), 19 * (1 + (page - 1)))
-    ]
+    pages = user_data["pages"]
+    chat_id = user_data["chat_id"]
+    offset = 6 * (page - 1)
+    limit = offset + 6
+    logger.info(f"{page=}, {offset=}, {limit=}")
+    responses = await uow.responses.get_user_responses(
+        chat_id, offset=offset, limit=limit
+    )
+    logger.info(responses)
+
     await callback.message.edit_text(
         text="Responses:",
-        reply_markup=make_paginate_keyboard(responses, len(responses) * 4, page),
+        reply_markup=make_paginate_keyboard(responses, pages, page),
     )
     await state.update_data(page=page)
 
@@ -46,15 +66,51 @@ async def previous_five_responses(callback: CallbackQuery, state: FSMContext):
 @response_router.callback_query(
     ResponseStates.paginated_response, Text(ResponseKeyboardButtons.next_callback_data)
 )
-async def next_five_responses(callback: CallbackQuery, state: FSMContext):
+async def next_five_responses(
+    callback: CallbackQuery, state: FSMContext, uow: SQLAlchemyUoW
+):
     """Generate next user responses."""
     user_data = await state.get_data()
     page = user_data["page"] + 1
-    responses = [
-        f"response_{i}" for i in range(1 + 19 * (page - 1), 19 * (1 + (page - 1)))
-    ]
+    pages = user_data["pages"]
+    chat_id = user_data["chat_id"]
+    offset = 6 * (page - 1)
+    limit = offset + 6
+    logger.info(f"{page=}, {offset=}, {limit=}")
+
+    responses = await uow.responses.get_user_responses(
+        chat_id, offset=offset, limit=limit
+    )
+    logger.info(responses)
+
     await callback.message.edit_text(
         text="Responses:",
-        reply_markup=make_paginate_keyboard(responses, len(responses) * 4, page),
+        reply_markup=make_paginate_keyboard(responses, pages, page),
     )
     await state.update_data(page=page)
+
+
+@response_router.callback_query(ResponseStates.paginated_response, Text("pass"))
+async def do_nothing(callback: CallbackQuery):
+    """Just do nothing in case of callback data."""
+    await callback.answer()
+
+
+@response_router.callback_query(ResponseStates.paginated_response, Text(contains="-"))
+async def make_response(callback: CallbackQuery, uow: SQLAlchemyUoW):
+    """Generate user response."""
+    response_id = callback.data
+    response = await uow.responses.get_user_response_by_id(response_id)
+    logger.info(response.recognized_image_id)
+    if response.recognized_image_id:
+        await callback.message.answer_photo(
+            photo=response.recognized_image_id,
+            caption=text_templates.roboflow_success_response(response.get_labels()),
+            reply_markup=make_main_keyboard(),
+        )
+    else:
+        await callback.message.answer(
+            text=text_templates.roboflow_empty_response(),
+            reply_markup=make_main_keyboard(),
+        )
+    await callback.answer()

@@ -47,5 +47,9 @@ class Response(Base):
     def to_dto(self) -> dto.Response:
         """Convert to dto."""
         return dto.Response(
-            recognized_image_id=self.response_image_id, objects=self.objects
+            id=self.id,
+            uploaded_image_id=self.uploaded_image_id,
+            recognized_image_id=self.response_image_id,
+            generated_at=self.generated_at,
+            objects=self.objects,
         )
