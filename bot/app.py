@@ -9,7 +9,7 @@ from bot.config import load_confg
 from bot.handlers import common_router, recognition_router, response_router
 from bot.middlewares.db import DBSessionMiddleware
 from bot.ui_commands import bot_set_commands
-from bot.utils import initialize_roboflow, on_startup
+from bot.utils import roboflow_service, on_startup
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,9 @@ async def main():
 
     dp.update.middleware(DBSessionMiddleware(sm=sessionmaker))
 
-    roboflow_api = initialize_roboflow(cfg.roboflow, cfg.bot_token.get_secret_value())
+    roboflow_api = roboflow_service.initialize_roboflow(
+        cfg.roboflow, cfg.bot_token.get_secret_value()
+    )
     await bot_set_commands(bot)
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, roboflow_api=roboflow_api, model=model)

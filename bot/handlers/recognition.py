@@ -17,7 +17,9 @@ from bot.keyboards.recognition import (
 from bot.infrastructure.db.uow import SQLAlchemyUoW
 from bot.infrastructure.db.models import NeuralModel
 from bot.states import UploadingPhotoForm
-from bot.utils import RoboFlow, text_templates
+from bot.utils import text_templates
+from bot.utils.roboflow_service import RoboFlow
+
 
 logger = logging.getLogger(__name__)
 
