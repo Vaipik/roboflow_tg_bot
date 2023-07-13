@@ -32,4 +32,5 @@ class Settings(BaseSettings):
         env_nested_delimiter = "__"
 
 
-cfg = Settings()
+def load_confg():
+    return Settings()

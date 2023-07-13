@@ -5,7 +5,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-from bot.config import cfg
+from bot.config import load_confg
 from bot.handlers import common_router, recognition_router, response_router
 from bot.middlewares.db import DBSessionMiddleware
 from bot.ui_commands import bot_set_commands
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 async def main():
     """Entry point for application."""
+    cfg = load_confg()
     db = cfg.db
     engine = create_async_engine(
         f"postgresql+asyncpg://{db.user}:{db.password}@{db.host}:{db.port}/{db.name}",
