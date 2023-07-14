@@ -35,6 +35,34 @@ class ResponseRepository(SQLAlchemyRepository):
         response = await self.session.scalar(statement)
         return response
 
+    async def count_responses(self, chat_id: int) -> int | None:
+        """
+        Count amount of user responses.
+
+        :param chat_id: chat identtifier
+        :return: total amount of chat(user) responses or None.
+        """
+        stmt = (
+            select(func.count(Response.id))
+            .join(Response.uploaded_image)
+            .where(
+                UploadedImage.chat_id == chat_id,
+                Response.response_image_id.is_not(None),
+            )
+        )
+        response = await self.session.execute(stmt)
+        return response.scalar_one_or_none()
+
+    async def get_user_responses(
+        self, chat_id: int, offset: int = 0, limit: int = 6
+    ) -> list[dto.ShortenResponse] | None:
+        """Return list of user respones in dto.Response or None."""
+        result = await self._get_user_responses(chat_id, offset, limit)
+        if result:
+            return [row.to_dto(shorten=True) for row in result]
+
+        return None
+
     async def get_response_by_uploaded_image_id(
         self, uploaded_image_id: UUID, model: NeuralModel
     ) -> dto.Response:
@@ -43,26 +71,10 @@ class ResponseRepository(SQLAlchemyRepository):
             await self._get_response_by_uploaded_image_id(uploaded_image_id, model)
         ).to_dto()  # type: ignore[return-value]
 
-    async def _get_response_by_uploaded_image_id(
-        self, uploaded_image_id: UUID, model: NeuralModel
-    ) -> Response | None:
-        """
-        Return user response with recognized objects for given image_id.
-
-        :param uploaded_image_id: image id for which NN made recognizing
-        :param model: instance of NN for which performed recognizing
-        :return: Response instance.
-        """
-        stmt = (
-            select(Response)
-            .where(
-                Response.uploaded_image_id == uploaded_image_id, Response.model == model
-            )
-            .options(joinedload(Response.objects, innerjoin=True))
-        )
-
-        result = await self.session.scalar(stmt)
-        return result
+    async def get_user_response_by_id(self, response_id: UUID | str) -> dto.Response:
+        """Get response from db and converts it do dto.Response."""
+        response = await self._get_user_response_by_id(response_id)
+        return response.to_dto()  # type: ignore[return-value]
 
     async def save_response(
         self,
@@ -92,15 +104,26 @@ class ResponseRepository(SQLAlchemyRepository):
             ]
         self.session.add(response)
 
-    async def get_user_responses(
-        self, chat_id: int, offset: int = 0, limit: int = 6
-    ) -> list[dto.ShortenResponse] | None:
-        """Return list of user respones in dto.Response or None."""
-        result = await self._get_user_responses(chat_id, offset, limit)
-        if result:
-            return [row.to_dto(shorten=True) for row in result]
+    async def _get_response_by_uploaded_image_id(
+        self, uploaded_image_id: UUID, model: NeuralModel
+    ) -> Response | None:
+        """
+        Return user response with recognized objects for given image_id.
 
-        return None
+        :param uploaded_image_id: image id for which NN made recognizing
+        :param model: instance of NN for which performed recognizing
+        :return: Response instance.
+        """
+        stmt = (
+            select(Response)
+            .where(
+                Response.uploaded_image_id == uploaded_image_id, Response.model == model
+            )
+            .options(joinedload(Response.objects, innerjoin=True))
+        )
+
+        result = await self.session.scalar(stmt)
+        return result
 
     async def _get_user_responses(self, chat_id: int, offset: int = 0, limit: int = 6):
         """
@@ -126,26 +149,6 @@ class ResponseRepository(SQLAlchemyRepository):
         result = response.unique().all()
         return result
 
-    async def count_responses(self, chat_id: int) -> int | None:
-        """
-        Count amount of user responses.
-
-        :param chat_id: chat identtifier
-        :return: total amount of chat(user) responses or None.
-        """
-        stmt = (
-            select(func.count(Response.id))
-            .join(Response.uploaded_image)
-            .where(UploadedImage.chat_id == chat_id)
-        )
-        response = await self.session.execute(stmt)
-        return response.scalar_one_or_none()
-
-    async def get_user_response_by_id(self, response_id: UUID | str) -> dto.Response:
-        """Get response from db and converts it do dto.Response."""
-        response = await self._get_user_response_by_id(response_id)
-        return response.to_dto()  # type: ignore[return-value]
-
     async def _get_user_response_by_id(
         self, response_id: UUID | str
     ) -> Response | None:
@@ -157,13 +160,3 @@ class ResponseRepository(SQLAlchemyRepository):
 
         result = await self.session.scalar(stmt)
         return result
-
-
-"""
-SELECT r.response_image_id, r.generated_at, r.id FROM responses r
-    JOIN uploaded_images u ON r.uploaded_image_id = u.id
-WHERE u.chat_id = chat_id
-ORDER BY r.generated_at DESC
-OFFSET 0
-LIMIT 6;
-"""
