@@ -56,3 +56,33 @@ DB__NAME=database_name
 DB__USER=user
 DB__PASSWORD=password
 ```
+___
+### Database schema
+This project has four sql tables.\
+Each of them presents a table in this schema.
+#### Models table
+This table stores data about current neural network.
+#### Uploaded images table
+Store data about photos that were uploaded by user. It has:
+* `file_id` - field that required for downloading file that was uploaded by user.
+If you upload same file a lot of times it will have different `file_id`
+* `file_unique_id` - this is unique field for file. If you upload same file it will have
+same `file_unique_id` but different `file_id`. Can not be used for downloading file.
+* `chat_id` - required to identify user. `file_unique_id` is same for all bots in tg but
+`file_id` can is stored for each bot. It means that if you will upload same file to different
+bots they will have same `file_unique_id` but different `file_id` and they will not able to
+access `file_id` that was uploaded not to them. Thas is why this column is mandatory.
+#### Responses table
+Store data about response even it was unsuccessfull.
+* `uploaded_image_id` this is FK to **uploaded images table**. This is required to not
+make a new prediction but generate an answer for previously uploaded image.
+* `recognize_image_id` this field can be `NULL`. For example if neural network was not
+able to recognize anything on the photo.
+* `generated_at` used for sorting.
+* `model_id` - TL;DR if neural network was updated user are able to upload photo again.
+Field is required for options when user uploads file that was previously
+uploaded to bot **BUT** this recognition was performed for `different` neural network model.
+#### Objects table
+This table store data about recognized objects. Each object store in `key: value` where
+key is **object label** (number of lego item) and **amount** (total items of this lego for each response)
+<img src="readme/DB.png"/>
