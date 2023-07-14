@@ -38,7 +38,7 @@ select = [
     "F",
     "D"
 ]
-exclude = ["config.py", "alembic", "tests"]
+exclude = ["config.py", "alembic", "tests", "readme", "README.md"]
 ignore = ["D100", "D104", "D105", "D107", "F821"]
 
 [tool.ruff.pydocstyle]
