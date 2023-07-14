@@ -22,7 +22,8 @@ async def main():
 
     sessionmaker = async_sessionmaker(engine, expire_on_commit=False)
     model = await on_startup.get_model(cfg.nn, sessionmaker)
-    bot = Bot(token=cfg.bot_token.get_secret_value(), parse_mode="HTML")
+    bot_token = cfg.bot_token.get_secret_value()
+    bot = Bot(token=bot_token, parse_mode="HTML")
 
     dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(common_router)
@@ -32,7 +33,7 @@ async def main():
     dp.update.middleware(DBSessionMiddleware(sm=sessionmaker))
 
     roboflow_api = roboflow_service.initialize_roboflow(
-        cfg.roboflow, cfg.bot_token.get_secret_value()
+        roboflow_api_settings=cfg.roboflow, neural_network=cfg.nn, bot_token=bot_token
     )
     await bot_set_commands(bot)
     await bot.delete_webhook(drop_pending_updates=True)

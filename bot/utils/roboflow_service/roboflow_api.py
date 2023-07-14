@@ -7,7 +7,7 @@ import roboflow
 from roboflow.models.object_detection import ObjectDetectionModel
 
 from PIL import Image, ImageDraw, ImageFont
-from bot.config import RoboFlowAPI
+from bot.config import NeuralNetwork, RoboFlowAPI
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,6 @@ class RoboFlow:
         :param bot_token: required for uploading user photo to robofolow.
         """
         self.model = model
-        self.model.colors()
         self.bot_token = bot_token
         self.font_path = font_path
 
@@ -106,14 +105,16 @@ class RoboFlow:
         return None
 
 
-def initialize_roboflow(settings: RoboFlowAPI, bot_token: str) -> RoboFlow:
-    """Initialize roboflow service with roboflow settings."""
+def initialize_roboflow(
+    *, roboflow_api_settings: RoboFlowAPI, neural_network: NeuralNetwork, bot_token: str
+) -> RoboFlow:
+    """Initialize roboflow service with roboflow roboflow_api_settings."""
     FONT_DIR = Path(__file__).parent
     model = (
-        roboflow.Roboflow(api_key=settings.private_key.get_secret_value())
+        roboflow.Roboflow(api_key=roboflow_api_settings.private_key.get_secret_value())
         .workspace()
-        .project(settings.project_id.get_secret_value())
-        .version(2)
+        .project(roboflow_api_settings.project_id.get_secret_value())
+        .version(neural_network.version.replace("v", ""))
         .model
     )
     roboflow_api = RoboFlow(
