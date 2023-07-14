@@ -19,18 +19,23 @@ async def generate_responses(message: Message, state: FSMContext, uow: SQLAlchem
     """Generate inline kb with previous user responses."""
     chat_id = message.from_user.id
     responses = await uow.responses.get_user_responses(chat_id, offset=0, limit=6)
-
-    pages = get_pages(await uow.responses.count_responses(chat_id))
-    await state.update_data(
-        chat_id=chat_id,
-        page=1,
-        pages=pages,
-    )
-    await message.answer(
-        text="Responses:",
-        reply_markup=make_paginate_keyboard(responses, pages, 1),
-    )
-    await state.set_state(ResponseStates.paginated_response)
+    if responses:
+        pages = get_pages(await uow.responses.count_responses(chat_id))
+        await state.update_data(
+            chat_id=chat_id,
+            page=1,
+            pages=pages,
+        )
+        await message.answer(
+            text="Responses:",
+            reply_markup=make_paginate_keyboard(responses, pages, 1),
+        )
+        await state.set_state(ResponseStates.paginated_response)
+    else:
+        await message.answer(
+            text="You didn't try to recognize anything.",
+            reply_markup=make_main_keyboard(),
+        )
 
 
 @response_router.callback_query(
