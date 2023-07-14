@@ -16,7 +16,7 @@ class NeuralModel(Base):
     name: Mapped[str]
     version: Mapped[str]
     responses: Mapped[list["Response"]] = relationship(  # type: ignore
-        back_populates="model"
+        back_populates="model", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:

@@ -28,17 +28,19 @@ class Response(Base):
         TIMESTAMP(timezone=True), server_default=func.now()
     )
     # FK
-    uploaded_image_id: Mapped[UUID] = mapped_column(ForeignKey("uploaded_images.id"))
+    uploaded_image_id: Mapped[UUID] = mapped_column(
+        ForeignKey("uploaded_images.id", ondelete="CASCADE")
+    )
     model_id: Mapped[UUID] = mapped_column(ForeignKey("neural_models.id"))
     # Alchemy relationships
     objects: Mapped[list["RecognizedObject"]] = relationship(  # type: ignore
-        back_populates="response"
+        back_populates="response", cascade="all, delete-orphan"
     )
     uploaded_image: Mapped["UploadedImage"] = relationship(  # type: ignore
-        back_populates="response", uselist=False
+        back_populates="response", uselist=False, cascade="all, delete-orphan"
     )
     model: Mapped["NeuralModel"] = relationship(  # type: ignore
-        back_populates="responses", uselist=False
+        back_populates="responses", uselist=False, cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:

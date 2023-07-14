@@ -12,5 +12,5 @@ class UploadedImage(Base):
     file_id: Mapped[str]
     chat_id: Mapped[int]
     response: Mapped[list["Response"]] = relationship(  # type: ignore
-        back_populates="uploaded_image"
+        back_populates="uploaded_image", cascade="all, delete-orphan"
     )

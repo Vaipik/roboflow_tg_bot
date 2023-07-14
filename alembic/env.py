@@ -9,8 +9,9 @@ from alembic import context  # type: ignore
 
 from bot.infrastructure.db.models import Base
 
-from bot.config import cfg
+from bot.config import load_confg
 
+cfg = load_confg()
 target_metadata = Base.metadata
 
 # this is the Alembic Config object, which provides
