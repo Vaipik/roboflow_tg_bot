@@ -1,4 +1,4 @@
-name: ruff
+name: tests
 run-name: ${{ github.actor }} ruff and tests code checking
 on: [ push, pull_request ]
 jobs:
