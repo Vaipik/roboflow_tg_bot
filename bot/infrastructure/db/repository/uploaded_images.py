@@ -1,13 +1,9 @@
-import logging
 from uuid import UUID
 
 from sqlalchemy import select
 
 from .base import SQLAlchemyRepository
 from bot.infrastructure.db.models import UploadedImage
-
-
-logger = logging.getLogger(__name__)
 
 
 class UploadedImageRepository(SQLAlchemyRepository):

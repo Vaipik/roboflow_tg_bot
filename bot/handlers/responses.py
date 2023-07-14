@@ -1,5 +1,3 @@
-import logging
-
 from aiogram import F, Router
 from aiogram.filters import Text
 from aiogram.fsm.context import FSMContext
@@ -13,7 +11,6 @@ from bot.utils.paginator import get_pages
 from bot.utils import text_templates
 
 
-logger = logging.getLogger(__name__)
 response_router = Router()
 
 
@@ -49,13 +46,8 @@ async def previous_five_responses(
     pages = user_data["pages"]
     chat_id = user_data["chat_id"]
     offset = 6 * (page - 1)
-    limit = offset + 6
-    logger.info(f"{page=}, {offset=}, {limit=}")
-    responses = await uow.responses.get_user_responses(
-        chat_id, offset=offset, limit=limit
-    )
-    logger.info(responses)
 
+    responses = await uow.responses.get_user_responses(chat_id, offset=offset)
     await callback.message.edit_text(
         text="Responses:",
         reply_markup=make_paginate_keyboard(responses, pages, page),
@@ -75,13 +67,8 @@ async def next_five_responses(
     pages = user_data["pages"]
     chat_id = user_data["chat_id"]
     offset = 6 * (page - 1)
-    limit = offset + 6
-    logger.info(f"{page=}, {offset=}, {limit=}")
 
-    responses = await uow.responses.get_user_responses(
-        chat_id, offset=offset, limit=limit
-    )
-    logger.info(responses)
+    responses = await uow.responses.get_user_responses(chat_id, offset=offset)
 
     await callback.message.edit_text(
         text="Responses:",
@@ -97,11 +84,10 @@ async def do_nothing(callback: CallbackQuery):
 
 
 @response_router.callback_query(ResponseStates.paginated_response, Text(contains="-"))
-async def make_response(callback: CallbackQuery, uow: SQLAlchemyUoW):
+async def make_response(callback: CallbackQuery, state: FSMContext, uow: SQLAlchemyUoW):
     """Generate user response."""
     response_id = callback.data
     response = await uow.responses.get_user_response_by_id(response_id)
-    logger.info(response.recognized_image_id)
     if response.recognized_image_id:
         await callback.message.answer_photo(
             photo=response.recognized_image_id,
@@ -113,4 +99,5 @@ async def make_response(callback: CallbackQuery, uow: SQLAlchemyUoW):
             text=text_templates.roboflow_empty_response(),
             reply_markup=make_main_keyboard(),
         )
+    await state.clear()
     await callback.answer()

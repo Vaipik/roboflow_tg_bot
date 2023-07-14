@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from uuid import UUID
 
 from aiogram import Bot, F, Router
@@ -20,8 +19,6 @@ from bot.states import UploadingPhotoForm
 from bot.utils import text_templates
 from bot.utils.roboflow_service import RoboFlow
 
-
-logger = logging.getLogger(__name__)
 
 recognition_router = Router()
 
@@ -168,4 +165,5 @@ async def generate_response(
         )
 
     await uow.commit()
+    await state.clear()
     await callback.answer(text="Redirecting to main menu", show_alert=True)

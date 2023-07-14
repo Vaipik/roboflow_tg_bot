@@ -1,3 +1,3 @@
-from .response import Response
+from .response import ShortenResponse, Response
 
-__all__ = ["Response"]
+__all__ = ["ShortenResponse", "Response"]

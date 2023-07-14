@@ -44,12 +44,16 @@ class Response(Base):
     def __repr__(self) -> str:
         return f"[R {self.response_image_id=} | {self.uploaded_image_id}]"
 
-    def to_dto(self) -> dto.Response:
+    def to_dto(self, *, shorten: bool = False) -> dto.Response | dto.ShortenResponse:
         """Convert to dto."""
-        return dto.Response(
-            id=self.id,
-            uploaded_image_id=self.uploaded_image_id,
-            recognized_image_id=self.response_image_id,
-            generated_at=self.generated_at,
-            objects=self.objects,
+        return (
+            dto.ShortenResponse(id=self.id, generated_at=self.generated_at)
+            if shorten
+            else dto.Response(
+                id=self.id,
+                uploaded_image_id=self.uploaded_image_id,
+                recognized_image_id=self.response_image_id,
+                generated_at=self.generated_at,
+                objects=self.objects,
+            )
         )

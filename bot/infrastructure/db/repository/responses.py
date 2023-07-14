@@ -1,4 +1,3 @@
-import logging
 from uuid import UUID
 
 from sqlalchemy import select, func, desc
@@ -12,9 +11,6 @@ from bot.infrastructure.db.models import (
     NeuralModel,
 )
 from .base import SQLAlchemyRepository
-
-
-logger = logging.getLogger(__name__)
 
 
 class ResponseRepository(SQLAlchemyRepository):
@@ -45,7 +41,7 @@ class ResponseRepository(SQLAlchemyRepository):
         """Return DTO for response table model."""
         return (
             await self._get_response_by_uploaded_image_id(uploaded_image_id, model)
-        ).to_dto()
+        ).to_dto()  # type: ignore[return-value]
 
     async def _get_response_by_uploaded_image_id(
         self, uploaded_image_id: UUID, model: NeuralModel
@@ -98,11 +94,11 @@ class ResponseRepository(SQLAlchemyRepository):
 
     async def get_user_responses(
         self, chat_id: int, offset: int = 0, limit: int = 6
-    ) -> list[dto.Response] | None:
+    ) -> list[dto.ShortenResponse] | None:
         """Return list of user respones in dto.Response or None."""
         result = await self._get_user_responses(chat_id, offset, limit)
         if result:
-            return [row.to_dto() for row in result]
+            return [row.to_dto(shorten=True) for row in result]
 
         return None
 
@@ -118,14 +114,17 @@ class ResponseRepository(SQLAlchemyRepository):
         stmt = (
             select(Response)
             .join(Response.uploaded_image)
-            .where(UploadedImage.chat_id == chat_id)
+            .where(
+                UploadedImage.chat_id == chat_id,
+                Response.response_image_id.is_not(None),
+            )
             .order_by(desc(Response.generated_at))
             .offset(offset)
             .limit(limit)
-            .options(joinedload(Response.objects, innerjoin=True))
         )
         response = await self.session.scalars(stmt)
-        return response.unique().all()
+        result = response.unique().all()
+        return result
 
     async def count_responses(self, chat_id: int) -> int | None:
         """
@@ -140,19 +139,31 @@ class ResponseRepository(SQLAlchemyRepository):
             .where(UploadedImage.chat_id == chat_id)
         )
         response = await self.session.execute(stmt)
-        print(stmt)
         return response.scalar_one_or_none()
 
-    async def get_user_response_by_id(self, id: UUID | str) -> dto.Response:
+    async def get_user_response_by_id(self, response_id: UUID | str) -> dto.Response:
         """Get response from db and converts it do dto.Response."""
-        response = await self._get_user_response_by_id(id)
-        return response.to_dto()
+        response = await self._get_user_response_by_id(response_id)
+        return response.to_dto()  # type: ignore[return-value]
 
-    async def _get_user_response_by_id(self, id: UUID | str) -> Response | None:
+    async def _get_user_response_by_id(
+        self, response_id: UUID | str
+    ) -> Response | None:
         stmt = (
             select(Response)
-            .where(Response.id == id)
+            .where(Response.id == response_id)
             .options(joinedload(Response.objects, innerjoin=True))
         )
+
         result = await self.session.scalar(stmt)
         return result
+
+
+"""
+SELECT r.response_image_id, r.generated_at, r.id FROM responses r
+    JOIN uploaded_images u ON r.uploaded_image_id = u.id
+WHERE u.chat_id = chat_id
+ORDER BY r.generated_at DESC
+OFFSET 0
+LIMIT 6;
+"""

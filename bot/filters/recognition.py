@@ -1,4 +1,3 @@
-import logging
 from uuid import UUID
 
 from aiogram.filters import BaseFilter
@@ -6,8 +5,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
 from bot.infrastructure.db.uow import SQLAlchemyUoW
-
-logger = logging.getLogger(__name__)
 
 
 class CheckImageFilter(BaseFilter):

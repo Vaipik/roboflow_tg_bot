@@ -1,12 +1,9 @@
-import logging
 from dataclasses import dataclass
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot import dto
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -37,8 +34,6 @@ def make_paginate_keyboard(
     :return: keyboard.
     """
     builder = InlineKeyboardBuilder()
-    logger.info(type(str(responses[0].id)))
-    logger.info(str(responses[0].id))
     for i in range(0, len(responses), 2):
         builder.row(
             *[

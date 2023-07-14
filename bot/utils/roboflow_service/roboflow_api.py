@@ -9,6 +9,7 @@ from roboflow.models.object_detection import ObjectDetectionModel
 from PIL import Image, ImageDraw, ImageFont
 from bot.config import RoboFlowAPI
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,6 +24,7 @@ class RoboFlow:
         :param bot_token: required for uploading user photo to robofolow.
         """
         self.model = model
+        self.model.colors()
         self.bot_token = bot_token
         self.font_path = font_path
 
@@ -52,7 +54,6 @@ class RoboFlow:
             ]
         }.
         """
-        print(self.font_path)
         result: dict[str, float] = {}
         with open(self.font_path, "rb") as f:
             font = ImageFont.truetype(font=f, size=14)
@@ -82,21 +83,25 @@ class RoboFlow:
     ) -> tuple[dict, bytes] | None:
         """Make prediction using roboflow API. Returns response with boundary boxes."""
         url = self.make_url(file_path)
-        response: dict[str, list[dict]] | None = self.model.predict(
-            url, hosted=True
-        ).json()
-        predictions = response.get("predictions")
-        if predictions:
-            img = Image.open(file_bytes)
-            draw = ImageDraw.Draw(img, "RGBA")
-            result = self.parse_response(draw, predictions)
+        try:
+            response: dict[str, list[dict]] | None = self.model.predict(
+                url, hosted=True
+            ).json()
+        except Exception as e:
+            logger.error(e)
+        else:
+            predictions = response.get("predictions")
+            if predictions:
+                img = Image.open(file_bytes)
+                draw = ImageDraw.Draw(img, "RGBA")
+                result = self.parse_response(draw, predictions)
 
-            # Saving image to bytes
-            img_to_bytes = io.BytesIO()
-            img.save(img_to_bytes, format=img.format)
-            img_bytes = img_to_bytes.getvalue()
+                # Saving image to bytes
+                img_to_bytes = io.BytesIO()
+                img.save(img_to_bytes, format=img.format)
+                img_bytes = img_to_bytes.getvalue()
 
-            return result, img_bytes
+                return result, img_bytes
 
         return None
 
@@ -111,7 +116,6 @@ def initialize_roboflow(settings: RoboFlowAPI, bot_token: str) -> RoboFlow:
         .version(2)
         .model
     )
-    logger.info(type(model))
     roboflow_api = RoboFlow(
         model=model, bot_token=bot_token, font_path=FONT_DIR / "FreeMonospacedBold.ttf"
     )
