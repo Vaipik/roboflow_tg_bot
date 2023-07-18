@@ -1,6 +1,6 @@
 name: tests
 run-name: ${{ github.actor }} ruff and tests code checking
-on: [ push, pull_request ]
+on: [pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
