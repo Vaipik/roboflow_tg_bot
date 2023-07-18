@@ -22,7 +22,7 @@ class RecognizedObject(Base):
         ForeignKey("responses.id", ondelete="CASCADE")
     )
     response: Mapped["Response"] = relationship(  # type: ignore
-        back_populates="objects", cascade="all, delete-orphan"
+        back_populates="objects"
     )
 
     def __repr__(self):

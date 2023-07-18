@@ -37,10 +37,10 @@ class Response(Base):
         back_populates="response", cascade="all, delete-orphan"
     )
     uploaded_image: Mapped["UploadedImage"] = relationship(  # type: ignore
-        back_populates="response", uselist=False, cascade="all, delete-orphan"
+        back_populates="response", uselist=False
     )
     model: Mapped["NeuralModel"] = relationship(  # type: ignore
-        back_populates="responses", uselist=False, cascade="all, delete-orphan"
+        back_populates="responses", uselist=False
     )
 
     def __repr__(self) -> str:
