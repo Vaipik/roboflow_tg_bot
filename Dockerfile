@@ -15,5 +15,4 @@ RUN pip install poetry && \
 
 RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 
-CMD ["alembic", "upgrade", "head"]
 CMD ["python", "-m", "bot"]

@@ -6,3 +6,6 @@ __pycache__/
 .ruff_cache/
 .pytest_cache/
 fly.toml
+.pre-commit-config
+README.md
+.github
